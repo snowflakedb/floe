@@ -59,11 +59,11 @@ class FloeEncryptorImplTest {
       assertEquals(0, header[12]);
       assertEquals(18, header[13]);
 
-      close(encryptor);
+      addLastSegment(encryptor);
     }
   }
 
-  private static byte[] close(FloeEncryptor encryptor) throws FloeException {
+  private static byte[] addLastSegment(FloeEncryptor encryptor) throws FloeException {
     return encryptor.processLastSegment(new byte[0]);
   }
 
@@ -118,50 +118,36 @@ class FloeEncryptorImplTest {
       encryptor.processSegment(plaintext);
       encryptor.processSegment(plaintext);
       assertThrows(FloeException.class, () -> encryptor.processSegment(plaintext));
-      assertThrows(FloeException.class, () -> encryptor.processSegment(plaintext));
       assertDoesNotThrow(() -> encryptor.processLastSegment(plaintext));
     }
   }
 
-  @Test
-  void shouldThrowExceptionIfPlaintextIsTooShort() throws Exception {
+  @ParameterizedTest
+  @ValueSource(ints = {0, 7, 9, 1024})
+  void shouldThrowExceptionIfPlaintextLengthIsIncorrect(int segmentSize) throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
-      FloeException e =
-          assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[0]));
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[segmentSize]));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got 0");
-      e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[7]));
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got 7");
+      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got " + segmentSize);
 
-      close(encryptor);
+      addLastSegment(encryptor);
     }
   }
 
   @Test
-  void shouldThrowEncryptionIfPlaintextIsTooLong() throws Exception {
+  void shouldThrowEncryptionIfLastSegmentPlaintextIsTooLong() throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       FloeException e =
-          assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[9]));
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got 9");
-      e =
-          assertThrows(
-              FloeException.class, () -> encryptor.processSegment(new byte[1024]));
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got 1024");
-
-      e =
           assertThrows(
               FloeException.class, () -> encryptor.processLastSegment(new byte[9]));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
       assertEquals(e.getCause().getMessage(), "last segment is too long, got 9, max is 8");
 
-      close(encryptor);
+      addLastSegment(encryptor);
     }
   }
 

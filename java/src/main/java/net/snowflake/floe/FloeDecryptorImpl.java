@@ -17,11 +17,12 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
       FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, byte[] floeHeaderAsBytes) throws FloeException {
     super(parameterSpec, floeKey, floeAad);
     byte[] encodedParams = this.parameterSpec.paramEncode();
+    int expectedHeaderLength = encodedParams.length
+        + this.parameterSpec.getFloeIvLength().getLength()
+        + headerTagLength;
     if (floeHeaderAsBytes.length
-        != encodedParams.length
-            + this.parameterSpec.getFloeIvLength().getLength()
-            + headerTagLength) {
-      throw new IllegalArgumentException("invalid header length");
+        != expectedHeaderLength) {
+      throw new IllegalArgumentException(String.format("invalid header length, expected %d, got %d", encodedParams.length, expectedHeaderLength));
     }
     ByteBuffer floeHeader = ByteBuffer.wrap(floeHeaderAsBytes);
 

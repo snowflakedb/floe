@@ -1,6 +1,8 @@
 package net.snowflake.floe;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
@@ -82,8 +84,12 @@ class FloeDecryptorImplTest {
     }
   }
 
-  @Test
-  void shouldThrowExceptionIfLastSegmentLengthIsMismatched() throws Exception {
+  @ParameterizedTest
+  @CsvSource(value = {
+      "12,last segment is too short",
+      "1024,last segment is too long"
+  })
+  void shouldThrowExceptionIfLastSegmentLengthIsMismatched(int segmentSize, String expectedErrorMessage) throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
@@ -91,14 +97,9 @@ class FloeDecryptorImplTest {
       encryptor.processLastSegment(new byte[4]);
       FloeException e =
           assertThrows(
-              FloeException.class, () -> decryptor.processSegment(new byte[12]));
+              FloeException.class, () -> decryptor.processSegment(new byte[segmentSize]));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals("last segment is too short", e.getCause().getMessage());
-      e =
-          assertThrows(
-              FloeException.class, () -> decryptor.processSegment(new byte[1024]));
-      assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals("last segment is too long", e.getCause().getMessage());
+      assertEquals(expectedErrorMessage, e.getCause().getMessage());
     }
   }
 
