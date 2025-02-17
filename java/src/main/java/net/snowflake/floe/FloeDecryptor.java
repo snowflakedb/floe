@@ -11,7 +11,7 @@ public interface FloeDecryptor extends AutoCloseable {
    * @param ciphertext ciphertext to be decrypted.
    * @return plaintext.
    */
-  byte[] processSegment(byte[] ciphertext) throws FloeException;
+  byte[] processSegment(byte[] ciphertext);
 
   /**
    * Returns information if last segment was already processed.

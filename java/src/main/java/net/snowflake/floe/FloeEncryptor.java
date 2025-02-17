@@ -12,7 +12,7 @@ public interface FloeEncryptor extends AutoCloseable {
    * @param plaintext plaintext to be encrypted.
    * @return ciphertext.
    */
-  byte[] processSegment(byte[] plaintext) throws FloeException;
+  byte[] processSegment(byte[] plaintext);
 
   /**
    * Processes given ciphertext to plaintext.
@@ -23,7 +23,7 @@ public interface FloeEncryptor extends AutoCloseable {
    * @param plaintext plaintext to be encrypted.
    * @return ciphertext.
    */
-  byte[] processLastSegment(byte[] plaintext) throws FloeException;
+  byte[] processLastSegment(byte[] plaintext);
 
   /**
    * Returns header for this FLOE instance, that is required for decryption.

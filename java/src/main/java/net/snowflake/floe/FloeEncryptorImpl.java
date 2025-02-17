@@ -15,7 +15,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   private final byte[] header;
 
-  FloeEncryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, SecureRandom random) throws FloeException {
+  FloeEncryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, SecureRandom random) {
     super(parameterSpec, floeKey, floeAad);
     this.floeIv =
         FloeIv.generateRandom(random, parameterSpec.getFloeIvLength());
@@ -24,7 +24,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
     this.random = random;
   }
 
-  private byte[] buildHeader() throws FloeException {
+  private byte[] buildHeader() {
     try {
       byte[] parametersEncoded = parameterSpec.paramEncode();
       byte[] floeIvBytes = floeIv.getBytes();
@@ -52,7 +52,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input) throws FloeException {
+  public byte[] processSegment(byte[] input) {
     assertNotClosed();
     try {
       verifySegmentLength(input);
@@ -98,7 +98,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   @Override
-  public byte[] processLastSegment(byte[] input) throws FloeException {
+  public byte[] processLastSegment(byte[] input){
     assertNotClosed();
     try {
       verifyLastSegmentNotEmpty(input);

@@ -14,7 +14,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   private long segmentCounter;
 
   FloeDecryptorImpl(
-      FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, byte[] floeHeaderAsBytes) throws FloeException {
+      FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, byte[] floeHeaderAsBytes) {
     super(parameterSpec, floeKey, floeAad);
     byte[] encodedParams = this.parameterSpec.paramEncode();
     int expectedHeaderLength = encodedParams.length
@@ -53,7 +53,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input) throws FloeException {
+  public byte[] processSegment(byte[] input) {
     assertNotClosed();
     ByteBuffer inputBuffer = ByteBuffer.wrap(input);
     try {
