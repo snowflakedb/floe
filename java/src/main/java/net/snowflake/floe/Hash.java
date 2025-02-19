@@ -4,18 +4,18 @@ public enum Hash {
   SHA384((byte) 0, "HmacSHA384");
 
   private byte id;
-  private final String jceName;
+  private final String jceHmacName;
 
-  Hash(byte id, String jceName) {
+  Hash(byte id, String jceHmacName) {
     this.id = id;
-    this.jceName = jceName;
+    this.jceHmacName = jceHmacName;
   }
 
   byte getId() {
     return id;
   }
 
-  public String getJceName() {
-    return jceName;
+  public String getJceHmacName() {
+    return jceHmacName;
   }
 }

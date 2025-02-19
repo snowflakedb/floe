@@ -69,8 +69,8 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   }
 
   private boolean isLastSegment(ByteBuffer inputBuffer) {
-    int segmentSizeMarker = inputBuffer.getInt();
     try {
+      int segmentSizeMarker = inputBuffer.getInt();
       return segmentSizeMarker != NON_TERMINAL_SEGMENT_SIZE_MARKER;
     } finally {
       inputBuffer.rewind();

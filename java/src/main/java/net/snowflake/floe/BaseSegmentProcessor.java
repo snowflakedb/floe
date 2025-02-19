@@ -30,7 +30,7 @@ abstract class BaseSegmentProcessor implements Closeable {
   }
 
   protected AeadKey getKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
-    if (currentAeadKey == null || segmentCounter % parameterSpec.getKeyRotationModulo() == 0) {
+    if (currentAeadKey == null || segmentCounter % parameterSpec.getKeyRotationMask() == 0) {
       // we don't need masking, because we derive a new key only when key rotation happens
       currentAeadKey = deriveKey(floeKey, floeIv, floeAad, segmentCounter);
     }

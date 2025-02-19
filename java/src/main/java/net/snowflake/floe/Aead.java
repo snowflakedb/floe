@@ -6,7 +6,7 @@ import net.snowflake.floe.aead.Gcm;
 import java.util.function.Supplier;
 
 public enum Aead {
-  AES_GCM_256((byte) 0, "AES", "AES/GCM/NoPadding", 32, 12, 16, () -> new Gcm(16));
+  AES_GCM_256((byte) 0, "AES", "AES/GCM/NoPadding", 32, 12, 16, 20, 1L << 40, () -> new Gcm(16));
 
   private final byte id;
   private final String jceKeyTypeName;
@@ -14,6 +14,8 @@ public enum Aead {
   private final int keyLength;
   private final int ivLength;
   private final int authTagLength;
+  private final int keyRotationMask;
+  private final long maxSegmentNumber;
   private final Supplier<AeadProvider> aeadProvider;
 
   Aead(
@@ -23,6 +25,8 @@ public enum Aead {
       int keyLength,
       int ivLength,
       int authTagLength,
+      int keyRotationMask,
+      long maxSegmentNumber,
       Supplier<AeadProvider> aeadProvider) {
     this.jceKeyTypeName = jceKeyTypeName;
     this.jceFullName = jceFullName;
@@ -30,6 +34,8 @@ public enum Aead {
     this.id = id;
     this.ivLength = ivLength;
     this.authTagLength = authTagLength;
+    this.keyRotationMask = keyRotationMask;
+    this.maxSegmentNumber = maxSegmentNumber;
     this.aeadProvider = aeadProvider;
   }
 
@@ -55,6 +61,14 @@ public enum Aead {
 
   int getAuthTagLength() {
     return authTagLength;
+  }
+
+  int getKeyRotationMask() {
+    return keyRotationMask;
+  }
+
+  long getMaxSegmentNumber() {
+    return maxSegmentNumber;
   }
 
   AeadProvider getAeadProvider() {

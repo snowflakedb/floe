@@ -43,7 +43,7 @@ class FloeTest {
             assertThrows(
                 IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, header));
         assertEquals(e.getMessage(), "invalid parameters header");
-        encryptor.processLastSegment(new byte[0]);
+        encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
       }
     }
 
@@ -60,7 +60,7 @@ class FloeTest {
                 FloeException.class, () -> floe.createDecryptor(secretKey, aad, header));
         assertInstanceOf(IllegalArgumentException.class, e.getCause());
         assertEquals(e.getCause().getMessage(), "invalid header tag");
-        encryptor.processLastSegment(new byte[0]);
+        encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
       }
     }
 
@@ -77,7 +77,7 @@ class FloeTest {
                 FloeException.class, () -> floe.createDecryptor(secretKey, aad, header));
         assertInstanceOf(IllegalArgumentException.class, e.getCause());
         assertEquals(e.getCause().getMessage(), "invalid header tag");
-        encryptor.processLastSegment(new byte[0]);
+        encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
       }
     }
   }

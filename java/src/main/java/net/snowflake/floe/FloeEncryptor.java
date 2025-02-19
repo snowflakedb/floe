@@ -1,7 +1,7 @@
 package net.snowflake.floe;
 
 /**
- * FLOE encryptor. Implementations are not forced to be thread safe.
+ * FLOE encryptor. Implementations of these classes are not thread safe.
  */
 public interface FloeEncryptor extends AutoCloseable {
   /**

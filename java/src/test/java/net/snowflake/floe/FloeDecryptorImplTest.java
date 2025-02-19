@@ -104,7 +104,7 @@ class FloeDecryptorImplTest {
   }
 
   @Test
-  void shouldThrowExceptionIfLastSegmentLengthMarkerIsNotMinusOne() throws Exception {
+  void shouldThrowExceptionIfLastSegmentLengthMarkerDoesNotMatchActualLength() throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);

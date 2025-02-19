@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
@@ -29,7 +30,7 @@ class FloeE2ETest {
     // ENCRYPTION PHASE
     byte[] plaintext = new byte[plaintextSize];
     random.nextBytes(plaintext);
-    InputStream plaintexInputStream = new ByteArrayInputStream(plaintext);
+    InputStream plaintextInputStream = new ByteArrayInputStream(plaintext);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     byte[] header;
@@ -37,7 +38,7 @@ class FloeE2ETest {
       header = encryptor.getHeader();
       byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
       do {
-        int readBytes = plaintexInputStream.read(plaintextSegment);
+        int readBytes = plaintextInputStream.read(plaintextSegment);
         byte[] ciphertext;
         if (readBytes == -1) {
           ciphertext = encryptor.processLastSegment(new byte[0]);
@@ -45,8 +46,7 @@ class FloeE2ETest {
           ciphertext = encryptor.processSegment(plaintextSegment);
         } else {
           // TODO SNOW-1322063 add API for reusing bigger byte array
-          byte[] lastPlaintextSegment = new byte[readBytes];
-          System.arraycopy(plaintextSegment, 0, lastPlaintextSegment, 0, readBytes);
+          byte[] lastPlaintextSegment = Arrays.copyOf(plaintextSegment, readBytes);
           ciphertext = encryptor.processLastSegment(lastPlaintextSegment);
         }
         baos.write(ciphertext);
@@ -65,8 +65,7 @@ class FloeE2ETest {
         if (readBytes == parameterSpec.getEncryptedSegmentLength()) {
           targetPlaintext = decryptor.processSegment(ciphertextSegment);
         } else {
-          byte[] lastCiphertextSegment = new byte[readBytes];
-          System.arraycopy(ciphertextSegment, 0, lastCiphertextSegment, 0, readBytes);
+          byte[] lastCiphertextSegment = Arrays.copyOf(ciphertextSegment, readBytes);
           targetPlaintext = decryptor.processSegment(lastCiphertextSegment);
         }
         baos.write(targetPlaintext);

@@ -2,14 +2,15 @@ package net.snowflake.floe;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Optional;
 
 public class FloeParameterSpec {
   private final Aead aead;
   private final Hash hash;
   private final int encryptedSegmentLength;
   private final FloeIvLength floeIvLength;
-  private final int keyRotationModulo;
-  private final long maxSegmentNumber;
+  private final Integer keyRotationModuloOverride;
+  private final Long maxSegmentNumberOverride;
 
   public FloeParameterSpec(Aead aead, Hash hash, int encryptedSegmentLength, int floeIvLength) {
     this(
@@ -17,8 +18,8 @@ public class FloeParameterSpec {
         hash,
         encryptedSegmentLength,
         new FloeIvLength(floeIvLength),
-        1 << 20,
-        1L << 40);
+        null,
+        null);
   }
 
   FloeParameterSpec(
@@ -26,14 +27,14 @@ public class FloeParameterSpec {
       Hash hash,
       int encryptedSegmentLength,
       FloeIvLength floeIvLength,
-      int keyRotationModulo,
-      long maxSegmentNumber) {
+      Integer keyRotationModuloOverride,
+      Long maxSegmentNumberOverride) {
     this.aead = aead;
     this.hash = hash;
     this.encryptedSegmentLength = encryptedSegmentLength;
     this.floeIvLength = floeIvLength;
-    this.keyRotationModulo = keyRotationModulo;
-    this.maxSegmentNumber = maxSegmentNumber;
+    this.keyRotationModuloOverride = keyRotationModuloOverride;
+    this.maxSegmentNumberOverride = maxSegmentNumberOverride;
     if (encryptedSegmentLength <= 0) {
       throw new IllegalArgumentException("encryptedSegmentLength must be > 0");
     }
@@ -72,11 +73,11 @@ public class FloeParameterSpec {
     return encryptedSegmentLength - aead.getIvLength() - aead.getAuthTagLength() - 4;
   }
 
-  int getKeyRotationModulo() {
-    return keyRotationModulo;
+  int getKeyRotationMask() {
+    return Optional.ofNullable(keyRotationModuloOverride).orElse(aead.getKeyRotationMask());
   }
 
   long getMaxSegmentNumber() {
-    return maxSegmentNumber;
+    return Optional.ofNullable(maxSegmentNumberOverride).orElse(aead.getMaxSegmentNumber());
   }
 }

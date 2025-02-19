@@ -101,7 +101,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   public byte[] processLastSegment(byte[] input){
     assertNotClosed();
     try {
-      verifyLastSegmentNotEmpty(input);
+      verifyLastSegmentLength(input);
       AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
       AeadIv aeadIv =
           AeadIv.generateRandom(
@@ -127,7 +127,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
     return output.array();
   }
 
-  private void verifyLastSegmentNotEmpty(byte[] input) {
+  private void verifyLastSegmentLength(byte[] input) {
     if (input.length > parameterSpec.getPlainTextSegmentLength()) {
       throw new IllegalArgumentException(
           String.format(

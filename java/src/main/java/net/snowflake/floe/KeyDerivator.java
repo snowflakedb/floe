@@ -31,7 +31,7 @@ class KeyDerivator {
   }
 
   private byte[] hkdfExpandInternal(Hash hash, FloeKey prk, byte[] info, int len) throws NoSuchAlgorithmException, InvalidKeyException {
-    Mac mac = Mac.getInstance(hash.getJceName());
+    Mac mac = Mac.getInstance(hash.getJceHmacName());
     mac.init(prk.getKey());
     mac.update(info);
     mac.update((byte) 1);

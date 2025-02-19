@@ -111,7 +111,7 @@ class FloeEncryptorImplTest {
   void shouldThrowExceptionOnMaxSegmentReached() throws Exception {
     FloeParameterSpec parameterSpec =
         new FloeParameterSpec(
-            Aead.AES_GCM_256, Hash.SHA384, 40, new FloeIvLength(32), 20, 3);
+            Aead.AES_GCM_256, Hash.SHA384, 40, new FloeIvLength(32), 20, 3L);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       byte[] plaintext = new byte[8];
