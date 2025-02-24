@@ -1,12 +1,9 @@
 package net.snowflake.floe;
 
-import net.snowflake.floe.aead.AeadProvider;
-import net.snowflake.floe.aead.Gcm;
-
 import java.util.function.Supplier;
 
 public enum Aead {
-  AES_GCM_256((byte) 0, "AES", "AES/GCM/NoPadding", 32, 12, 16, 20, 1L << 40, () -> new Gcm(16));
+  AES_GCM_256((byte) 0, "AES", "AES/GCM/NoPadding", 32, 12, 16, 20, 1L << 40, () -> new GcmAead(16));
 
   private final byte id;
   private final String jceKeyTypeName;

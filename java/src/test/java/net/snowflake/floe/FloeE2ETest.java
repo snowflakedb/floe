@@ -1,5 +1,6 @@
 package net.snowflake.floe;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -18,13 +19,39 @@ class FloeE2ETest {
   SecretKey secretKey = new SecretKeySpec(new byte[32], "AES");
   byte[] aad = new byte[32];
 
+  FloeParameterSpec parameterSpec4kB = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32);
+  FloeParameterSpec parameterSpec1MB = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32);
+
   @ParameterizedTest
   @ValueSource(ints = {
       200, // multiple of plaintext segment size
       301, // and the oposite
   })
-  void run(int plaintextSize) throws Exception {
+  void runForVariousPlaintextSizesRelatedToParameters(int plaintextSize) throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    run(parameterSpec, plaintextSize);
+  }
+
+  @Test
+  void runFor4kB() throws Exception {
+    runForVariousPlaintextSizes(parameterSpec4kB);
+  }
+
+  @Test
+  void runFor1MB() throws Exception {
+    runForVariousPlaintextSizes(parameterSpec1MB);
+  }
+
+  private void runForVariousPlaintextSizes(FloeParameterSpec parameterSpec) throws Exception {
+    run(parameterSpec, 100);
+    run(parameterSpec, parameterSpec.getPlainTextSegmentLength() - 1);
+    run(parameterSpec, parameterSpec.getPlainTextSegmentLength());
+    run(parameterSpec, parameterSpec.getPlainTextSegmentLength() + 1);
+    run(parameterSpec, parameterSpec.getPlainTextSegmentLength() * 2);
+    run(parameterSpec, parameterSpec.getPlainTextSegmentLength() * 2 + 1);
+  }
+
+  private void run(FloeParameterSpec parameterSpec, int plaintextSize) throws Exception {
     Floe floe = Floe.getInstance(parameterSpec);
 
     // ENCRYPTION PHASE
@@ -62,7 +89,9 @@ class FloeE2ETest {
       do {
         int readBytes = ciphertextInputStream.read(ciphertextSegment);
         byte[] targetPlaintext;
-        if (readBytes == parameterSpec.getEncryptedSegmentLength()) {
+        if (readBytes == -1) {
+          break;
+        } else if (readBytes == parameterSpec.getEncryptedSegmentLength()) {
           targetPlaintext = decryptor.processSegment(ciphertextSegment);
         } else {
           byte[] lastCiphertextSegment = Arrays.copyOf(ciphertextSegment, readBytes);

@@ -1,7 +1,5 @@
 package net.snowflake.floe;
 
-import net.snowflake.floe.aead.AeadProvider;
-
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 
@@ -53,25 +51,25 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   @Override
   public byte[] processSegment(byte[] input) {
-    assertNotClosed();
-    try {
-      verifySegmentLength(input);
-      verifyMaxSegmentNumberNotReached();
-      AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
-      AeadIv aeadIv =
-          AeadIv.generateRandom(
-              random, parameterSpec.getAead().getIvLength());
-      AeadAad aeadAad = AeadAad.nonTerminal(segmentCounter);
-      // it works as long as AEAD returns auth tag as a part of the ciphertext
-      byte[] ciphertextWithAuthTag =
-          aeadProvider.encrypt(aeadKey.getKey(), aeadIv.getBytes(), aeadAad.getBytes(), input);
-      byte[] encoded = segmentToBytes(aeadIv, ciphertextWithAuthTag);
-      segmentCounter++;
-      return encoded;
-    } catch (Exception e) {
-      markAsCompletedExceptionally();
-      throw new FloeException(e);
-    }
+    return processInternal(() -> {
+      try {
+        verifySegmentLength(input);
+        verifyMaxSegmentNumberNotReached();
+        AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
+        AeadIv aeadIv =
+            AeadIv.generateRandom(
+                random, parameterSpec.getAead().getIvLength());
+        AeadAad aeadAad = AeadAad.nonTerminal(segmentCounter);
+        // it works as long as AEAD returns auth tag as a part of the ciphertext
+        byte[] ciphertextWithAuthTag =
+            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input);
+        byte[] encoded = segmentToBytes(aeadIv, ciphertextWithAuthTag);
+        segmentCounter++;
+        return encoded;
+      } catch (Exception e) {
+        throw new FloeException(e);
+      }
+    });
   }
 
   private void verifySegmentLength(byte[] input) {
@@ -98,24 +96,24 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   @Override
-  public byte[] processLastSegment(byte[] input){
-    assertNotClosed();
-    try {
-      verifyLastSegmentLength(input);
-      AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
-      AeadIv aeadIv =
-          AeadIv.generateRandom(
-              random, parameterSpec.getAead().getIvLength());
-      AeadAad aeadAad = AeadAad.terminal(segmentCounter);
-      byte[] ciphertextWithAuthTag =
-          aeadProvider.encrypt(aeadKey.getKey(), aeadIv.getBytes(), aeadAad.getBytes(), input);
-      byte[] lastSegmentBytes = lastSegmentToBytes(aeadIv, ciphertextWithAuthTag);
-      closeInternal();
-      return lastSegmentBytes;
-    } catch (Exception e) {
-      markAsCompletedExceptionally();
-      throw new FloeException(e);
-    }
+  public byte[] processLastSegment(byte[] input) {
+    return processInternal(() -> {
+      try {
+        verifyLastSegmentLength(input);
+        AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
+        AeadIv aeadIv =
+            AeadIv.generateRandom(
+                random, parameterSpec.getAead().getIvLength());
+        AeadAad aeadAad = AeadAad.terminal(segmentCounter);
+        byte[] ciphertextWithAuthTag =
+            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input);
+        byte[] lastSegmentBytes = lastSegmentToBytes(aeadIv, ciphertextWithAuthTag);
+        closeInternal();
+        return lastSegmentBytes;
+      } catch (Exception e) {
+        throw new FloeException(e);
+      }
+    });
   }
 
   private byte[] lastSegmentToBytes(AeadIv aeadIv, byte[] ciphertextWithAuthTag) {

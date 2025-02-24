@@ -1,6 +1,5 @@
-package net.snowflake.floe.aead;
+package net.snowflake.floe;
 
-import javax.crypto.SecretKey;
 import java.security.GeneralSecurityException;
 
 // Consideration for implementations:
@@ -10,9 +9,9 @@ import java.security.GeneralSecurityException;
 // a) For encrypt function - auth tag is returned with ciphertext.
 // b) For decrypt function - auth tag is passed with ciphertext.
 public interface AeadProvider {
-  byte[] encrypt(SecretKey key, byte[] iv, byte[] aad, byte[] plaintext)
+  byte[] encrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext)
       throws GeneralSecurityException;
 
-  byte[] decrypt(SecretKey key, byte[] iv, byte[] aad, byte[] ciphertext)
+  byte[] decrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] ciphertext)
       throws GeneralSecurityException;
 }

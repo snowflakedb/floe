@@ -3,9 +3,9 @@ package net.snowflake.floe;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.Closeable;
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.function.Supplier;
 
 abstract class BaseSegmentProcessor implements Closeable {
   protected static final int NON_TERMINAL_SEGMENT_SIZE_MARKER = -1;
@@ -27,6 +27,21 @@ abstract class BaseSegmentProcessor implements Closeable {
     this.floeKey = floeKey;
     this.floeAad = floeAad;
     this.keyDerivator = new KeyDerivator(parameterSpec);
+  }
+
+  protected byte[] processInternal(Supplier<byte[]> processFunc) {
+    assertNotClosed();
+    try {
+      byte[] result = processFunc.get();
+      completedExceptionally = false;
+      return result;
+    } catch (FloeException e) {
+      completedExceptionally = true;
+      throw e;
+    } catch (Exception e) {
+      completedExceptionally = true;
+      throw new FloeException(e);
+    }
   }
 
   protected AeadKey getKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -53,18 +68,14 @@ abstract class BaseSegmentProcessor implements Closeable {
     isClosed = true;
   }
 
-  protected void markAsCompletedExceptionally() {
-    completedExceptionally = true;
-  }
-
-  protected void assertNotClosed() {
+  private void assertNotClosed() {
     if (isClosed) {
       throw new IllegalStateException("stream has already been closed");
     }
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     if (!isClosed && !completedExceptionally) {
       throw new IllegalStateException("last segment was not processed");
     }

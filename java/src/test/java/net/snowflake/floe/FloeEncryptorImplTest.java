@@ -179,4 +179,26 @@ class FloeEncryptorImplTest {
       assertEquals("stream has already been closed", e.getMessage());
     }
   }
+
+  @Test
+  void correctSegmentShouldClearExceptionalMarkerAndFailOnClosingIfLastSegmentIsNotProcessed() throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad); FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
+      // incorrect segment
+      assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[9]));
+
+      // correct segment clears the encryptor
+      byte[] firstSegmentCiphertext = encryptor.processSegment(new byte[8]);
+      byte[] lastSegmentCiphertext = encryptor.processLastSegment(new byte[8]);
+
+      // incorrect segment
+      assertThrows(FloeException.class, () -> decryptor.processSegment(new byte[9]));
+
+      // correct segment clears the decryptor
+      assertArrayEquals(new byte[8], decryptor.processSegment(firstSegmentCiphertext));
+      assertArrayEquals(new byte[8], decryptor.processSegment(lastSegmentCiphertext));
+    }
+  }
 }

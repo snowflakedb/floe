@@ -1,7 +1,5 @@
 package net.snowflake.floe;
 
-import net.snowflake.floe.aead.AeadProvider;
-
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
@@ -53,28 +51,24 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input) {
-    assertNotClosed();
-    ByteBuffer inputBuffer = ByteBuffer.wrap(input);
-    try {
-      if (isLastSegment(inputBuffer)) {
-        return processLastSegment(inputBuffer);
-      } else {
-        return processNonLastSegment(inputBuffer);
+  public byte[] processSegment(byte[] ciphertext) {
+    return processInternal(() -> {
+      ByteBuffer inputBuffer = ByteBuffer.wrap(ciphertext);
+      try {
+        if (isLastSegment(inputBuffer)) {
+          return processLastSegment(inputBuffer);
+        } else {
+          return processNonLastSegment(inputBuffer);
+        }
+      } catch (GeneralSecurityException e) {
+        throw new FloeException(e);
       }
-    } catch (Exception e) {
-      markAsCompletedExceptionally();
-      throw new FloeException(e);
-    }
+    });
   }
 
   private boolean isLastSegment(ByteBuffer inputBuffer) {
-    try {
-      int segmentSizeMarker = inputBuffer.getInt();
-      return segmentSizeMarker != NON_TERMINAL_SEGMENT_SIZE_MARKER;
-    } finally {
-      inputBuffer.rewind();
-    }
+    final ByteBuffer workingBuffer = inputBuffer.duplicate();
+    return workingBuffer.getInt() != NON_TERMINAL_SEGMENT_SIZE_MARKER;
   }
 
   private byte[] processNonLastSegment(ByteBuffer inputBuf) throws GeneralSecurityException {
@@ -86,7 +80,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
     byte[] ciphertext = new byte[inputBuf.remaining()];
     inputBuf.get(ciphertext);
     byte[] decrypted =
-        aeadProvider.decrypt(aeadKey.getKey(), aeadIv.getBytes(), aeadAad.getBytes(), ciphertext);
+        aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, ciphertext);
     segmentCounter++;
     return decrypted;
   }
@@ -119,7 +113,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
     byte[] ciphertext = new byte[inputBuf.remaining()];
     inputBuf.get(ciphertext);
     byte[] decrypted =
-        aeadProvider.decrypt(aeadKey.getKey(), aeadIv.getBytes(), aeadAad.getBytes(), ciphertext);
+        aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, ciphertext);
     closeInternal();
     return decrypted;
   }
@@ -136,7 +130,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
 
   private void verifyLastSegmentSizeMarker(ByteBuffer inputBuf) {
     int segmentLengthFromSegment = inputBuf.getInt();
-    if (segmentLengthFromSegment != inputBuf.capacity()) {
+    if (segmentLengthFromSegment != inputBuf.remaining() + 4) {
       throw new IllegalArgumentException(
           String.format(
               "last segment length marker mismatch, expected: %d, got: %d",
