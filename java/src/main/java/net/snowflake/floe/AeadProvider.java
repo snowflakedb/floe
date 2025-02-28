@@ -8,7 +8,7 @@ import java.security.GeneralSecurityException;
 // 2. Authentication tag appended to the ciphertext:
 // a) For encrypt function - auth tag is returned with ciphertext.
 // b) For decrypt function - auth tag is passed with ciphertext.
-public interface AeadProvider {
+interface AeadProvider {
   byte[] encrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext)
       throws GeneralSecurityException;
 

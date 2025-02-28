@@ -13,7 +13,7 @@ import java.security.NoSuchAlgorithmException;
 // This class is not thread safe!
 // But as long as it is used only for FLOE, it is fine, as FLOE instance keeps its own instance of
 // GCM.
-public class GcmAead implements AeadProvider {
+class GcmAead implements AeadProvider {
   private final Cipher cipher;
   private final int tagLengthInBits;
 
