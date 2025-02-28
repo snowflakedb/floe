@@ -14,9 +14,9 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   FloeDecryptorImpl(
       FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, byte[] floeHeaderAsBytes) {
     super(parameterSpec, floeKey, floeAad);
-    byte[] encodedParams = this.parameterSpec.paramEncode();
+    byte[] encodedParams = this.parameterSpec.getEncodedParams();
     int expectedHeaderLength = encodedParams.length
-        + this.parameterSpec.getFloeIvLength().getLength()
+        + this.parameterSpec.getFloeIvLength()
         + headerTagLength;
     if (floeHeaderAsBytes.length
         != expectedHeaderLength) {
@@ -30,7 +30,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
       throw new IllegalArgumentException("invalid parameters header");
     }
 
-    byte[] floeIvBytes = new byte[this.parameterSpec.getFloeIvLength().getLength()];
+    byte[] floeIvBytes = new byte[this.parameterSpec.getFloeIvLength()];
     floeHeader.get(floeIvBytes, 0, floeIvBytes.length);
     this.floeIv = new FloeIv(floeIvBytes);
     this.aeadProvider = parameterSpec.getAead().getAeadProvider();

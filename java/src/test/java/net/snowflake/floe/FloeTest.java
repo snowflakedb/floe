@@ -92,7 +92,7 @@ class FloeTest {
               Aead.AES_GCM_256,
               Hash.SHA384,
               40,
-              new FloeIvLength(32),
+              32,
               4,
               1L << 40);
       Floe floe = Floe.getInstance(parameterSpec);
@@ -112,7 +112,7 @@ class FloeTest {
               Aead.AES_GCM_256,
               Hash.SHA384,
               40,
-              new FloeIvLength(32),
+              32,
               4,
               1L << 40);
       Floe floe = Floe.getInstance(parameterSpec);
@@ -134,7 +134,7 @@ class FloeTest {
               Aead.AES_GCM_256,
               Hash.SHA384,
               40,
-              new FloeIvLength(32),
+              32,
               4,
               1L << 40);
       Floe floe = Floe.getInstance(parameterSpec);
@@ -175,7 +175,7 @@ class FloeTest {
               Aead.AES_GCM_256,
               Hash.SHA384,
               40,
-              new FloeIvLength(32),
+              32,
               16,
               1L << 40);
       Floe floe = Floe.getInstance(floeParameterSpec);
@@ -207,7 +207,7 @@ class FloeTest {
               Aead.AES_GCM_256,
               Hash.SHA384,
               40,
-              new FloeIvLength(32),
+              32,
               16,
               1L << 40);
       Floe floe = Floe.getInstance(floeParameterSpec);

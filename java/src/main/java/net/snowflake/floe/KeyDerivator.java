@@ -15,7 +15,7 @@ class KeyDerivator {
 
   byte[] hkdfExpand(
       FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, FloePurpose purpose, int length) throws NoSuchAlgorithmException, InvalidKeyException {
-    byte[] encodedParams = parameterSpec.paramEncode();
+    byte[] encodedParams = parameterSpec.getEncodedParams();
     byte[] purposeBytes = purpose.generate();
     ByteBuffer info =
         ByteBuffer.allocate(

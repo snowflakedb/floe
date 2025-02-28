@@ -60,9 +60,9 @@ class FloeE2ETest {
     InputStream plaintextInputStream = new ByteArrayInputStream(plaintext);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    byte[] header;
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
-      header = encryptor.getHeader();
+      byte[] header = encryptor.getHeader();
+      baos.write(encryptor.getHeader());
       byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
       do {
         int readBytes = plaintextInputStream.read(plaintextSegment);
@@ -84,6 +84,10 @@ class FloeE2ETest {
     byte[] ciphertext = baos.toByteArray();
     InputStream ciphertextInputStream = new ByteArrayInputStream(ciphertext);
     baos = new ByteArrayOutputStream();
+
+    byte[] header = new byte[parameterSpec.getHeaderSize()];
+    ciphertextInputStream.read(header);
+
     try (FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, header)) {
       byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
       do {

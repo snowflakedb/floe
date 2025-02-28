@@ -24,7 +24,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   private byte[] buildHeader() {
     try {
-      byte[] parametersEncoded = parameterSpec.paramEncode();
+      byte[] parametersEncoded = parameterSpec.getEncodedParams();
       byte[] floeIvBytes = floeIv.getBytes();
       byte[] headerTag =
           keyDerivator.hkdfExpand(

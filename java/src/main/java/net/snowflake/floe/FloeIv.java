@@ -9,8 +9,8 @@ class FloeIv {
     this.bytes = bytes;
   }
 
-  static FloeIv generateRandom(SecureRandom random, FloeIvLength floeIvLength) {
-    byte[] iv = new byte[floeIvLength.getLength()];
+  static FloeIv generateRandom(SecureRandom random, int floeIvLength) {
+    byte[] iv = new byte[floeIvLength];
     random.nextBytes(iv);
     return new FloeIv(iv);
   }

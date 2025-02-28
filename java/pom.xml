@@ -11,6 +11,8 @@
         <java.version>8</java.version>
         <junit.version>5.11.3</junit.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <commons-io.version>2.17.0</commons-io.version>
+        <commons-codec.version>1.17.1</commons-codec.version>
     </properties>
 
     <dependencies>
@@ -30,6 +32,18 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
