@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-class ReferenceDataTest {
+class KatTest {
   private final SecretKey referenceKey = new SecretKeySpec(new byte[32], "AES");
   private final byte[] referenceAad = "This is AAD".getBytes(StandardCharsets.UTF_8);
 
@@ -29,19 +29,19 @@ class ReferenceDataTest {
     return Stream.of(
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 64, 32),
-            "reference_GCM256_IV256_64"
+            "reference_java_GCM256_IV256_64"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32),
-            "reference_GCM256_IV256_4K"
+            "reference_java_GCM256_IV256_4K"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32),
-            "reference_GCM256_IV256_1M"
+            "reference_java_GCM256_IV256_1M"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
-            "reference_rotation"
+            "reference_java_rotation"
         )
     );
   }
@@ -56,19 +56,19 @@ class ReferenceDataTest {
     return Stream.of(
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 64, 32),
-            "custom_GCM256_IV256_64"
+            "public_java_GCM256_IV256_64"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32),
-            "custom_GCM256_IV256_4K"
+            "public_java_GCM256_IV256_4K"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32),
-            "custom_GCM256_IV256_1M"
+            "public_java_GCM256_IV256_1M"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
-            "custom_rotation"
+            "public_java_rotation"
         )
     );
   }
@@ -100,7 +100,7 @@ class ReferenceDataTest {
   }
   
   private static byte[] readFile(String fileName) throws Exception {
-    String hexFileContent = IOUtils.toString(ReferenceDataTest.class.getClassLoader().getResource(fileName)).trim();
+    String hexFileContent = IOUtils.toString(KatTest.class.getClassLoader().getResource(fileName)).trim();
     return Hex.decodeHex(hexFileContent);
   }
 }
