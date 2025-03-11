@@ -1,0 +1,22 @@
+package net.snowflake.floe;
+
+/**
+ * FLOE decryptor. Implementations of these classes are not thread safe.
+ */
+public interface FloeDecryptor extends AutoCloseable {
+  /**
+   * Processes given ciphertext to plaintext.
+   * This function is to be used only with both terminal and non terminal segments.
+   *
+   * @param ciphertext ciphertext to be decrypted.
+   * @return plaintext.
+   */
+  byte[] processSegment(byte[] ciphertext);
+
+  /**
+   * Returns information if last segment was already processed.
+   *
+   * @return if last segment was already processed.
+   */
+  boolean isClosed();
+}
