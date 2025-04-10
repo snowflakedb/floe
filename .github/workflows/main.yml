@@ -1,0 +1,30 @@
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+    - SNOW-*
+
+concurrency:
+  # older builds for the same pull request numer or branch should be cancelled
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+
+jobs:
+  test-java:
+    name: "Test java"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'openjdk'
+          cache: maven
+      - name: Run tests
+        working-directory: ./java
+        shell: bash
+        run: ./mvnw package
