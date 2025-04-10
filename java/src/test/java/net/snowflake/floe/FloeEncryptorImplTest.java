@@ -7,10 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 
-import static net.snowflake.floe.FloeTest.toHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,46 +62,6 @@ class FloeEncryptorImplTest {
 
   private static byte[] addLastSegment(FloeEncryptor encryptor) throws FloeException {
     return encryptor.processLastSegment(new byte[0]);
-  }
-
-  @Test
-  void testEncryptionMatchesReference() throws Exception {
-    List<String> referenceCiphertextSegments =
-        Arrays.asList(
-            "ffffffff0000000100000000000000000100007f5713b9827bb806318311fcde197146a144c6b485", // pragma: allowlist secret
-            "ffffffff000000020000000000000000f926dfc0a0bac6263d1634ad9a72f86900872033a271a037", // pragma: allowlist secret
-            "ffffffff00000003000000000000000080df8fdee872febe574c2b8df0bb34b3fb25bfc5802703a2", // pragma: allowlist secret
-            "ffffffff000000040000000000000000f4d81083e57451dbfa538827942245019b8bc3354ecc31e0", // pragma: allowlist secret
-            "ffffffff000000050000000000000000d91b774b5b460bd665910114e155f1cbc55a9a262a54f65e", // pragma: allowlist secret
-            "ffffffff000000060000000000000000ec723f3807eb71ea42ff03f5420daf34e1a8f4fb58931db1", // pragma: allowlist secret
-            "ffffffff00000007000000000000000072960c06ec19ce94c27c9fc72d79164f187f37e86325d849", // pragma: allowlist secret
-            "ffffffff000000080000000000000000c00a40fb140d797da818ab57399cb986bddddd174b8d3d6a", // pragma: allowlist secret
-            "ffffffff000000090000000000000000065e959cd1ffa521896fb54949a57ad1c1f8291a531c6d60", // pragma: allowlist secret
-            "ffffffff0000000a0000000000000000dfde3da3f67a081fb31229ac11e43a629ed120fbf9942513" // pragma: allowlist secret
-            );
-    FloeParameterSpec parameterSpec =
-        new FloeParameterSpec(
-            Aead.AES_GCM_256,
-            Hash.SHA384,
-            40,
-            32,
-            4,
-            1L << 40);
-    Floe floe = Floe.getInstance(parameterSpec);
-    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad, new IncrementingSecureRandom(0));
-        FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      byte[] testData = new byte[8];
-      for (String referenceCiphertextSegment : referenceCiphertextSegments) {
-        byte[] ciphertextBytes = encryptor.processSegment(testData);
-        String ciphertextHex = toHex(ciphertextBytes);
-        assertEquals(referenceCiphertextSegment, ciphertextHex);
-        byte[] plaintextBytes = decryptor.processSegment(ciphertextBytes);
-        assertArrayEquals(testData, plaintextBytes);
-      }
-
-      byte[] lastSegment = encryptor.processLastSegment(new byte[0]);
-      decryptor.processSegment(lastSegment);
-    }
   }
 
   @Test

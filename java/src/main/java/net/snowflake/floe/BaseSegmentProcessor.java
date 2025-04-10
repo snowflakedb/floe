@@ -12,7 +12,8 @@ abstract class BaseSegmentProcessor implements Closeable {
   protected static final int headerTagLength = 32;
 
   protected final FloeParameterSpec parameterSpec;
-  protected final FloeKey floeKey;
+  protected final FloeIv floeIv;
+  protected final MessageKey messageKey;
   protected final FloeAad floeAad;
 
   protected final KeyDerivator keyDerivator;
@@ -22,11 +23,16 @@ abstract class BaseSegmentProcessor implements Closeable {
   private boolean isClosed;
   private boolean completedExceptionally;
 
-  BaseSegmentProcessor(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad) {
+  BaseSegmentProcessor(FloeParameterSpec parameterSpec, FloeIv floeIv, FloeKey floeKey, FloeAad floeAad) {
     this.parameterSpec = parameterSpec;
-    this.floeKey = floeKey;
+    this.floeIv = floeIv;
     this.floeAad = floeAad;
     this.keyDerivator = new KeyDerivator(parameterSpec);
+    try {
+      this.messageKey = new MessageKey(new SecretKeySpec(keyDerivator.hkdfExpandMessageKey(floeKey, floeIv, floeAad, parameterSpec.getHash().getLength()), "FLOE_MSG_KEY"));
+    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+      throw new FloeException(e);
+    }
   }
 
   protected byte[] processInternal(Supplier<byte[]> processFunc) {
@@ -44,18 +50,18 @@ abstract class BaseSegmentProcessor implements Closeable {
     }
   }
 
-  protected AeadKey getKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
+  protected AeadKey getKey(MessageKey messageKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
     if (currentAeadKey == null || segmentCounter % parameterSpec.getKeyRotationMask() == 0) {
       // we don't need masking, because we derive a new key only when key rotation happens
-      currentAeadKey = deriveKey(floeKey, floeIv, floeAad, segmentCounter);
+      currentAeadKey = deriveKey(messageKey, floeIv, floeAad, segmentCounter);
     }
     return currentAeadKey;
   }
 
-  private AeadKey deriveKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
+  private AeadKey deriveKey(MessageKey secretKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
     byte[] keyBytes =
-        keyDerivator.hkdfExpand(
-            floeKey,
+        keyDerivator.hkdfExpandAeadKey(
+            secretKey,
             floeIv,
             floeAad,
             new DekTagFloePurpose(segmentCounter),

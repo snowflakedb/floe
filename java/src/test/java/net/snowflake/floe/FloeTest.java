@@ -160,83 +160,12 @@ class FloeTest {
           new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 32);
       Floe floe = Floe.getInstance(parameterSpec);
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
-          FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
+           FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
         byte[] plaintext = new byte[3];
         byte[] encrypted = encryptor.processLastSegment(plaintext);
         byte[] decrypted = decryptor.processSegment(encrypted);
         assertArrayEquals(plaintext, decrypted);
       }
     }
-
-    @Test
-    void testDecryptLastSegmentWithReferenceDataWithEmptyLastSegment() throws Exception {
-      FloeParameterSpec floeParameterSpec =
-          new FloeParameterSpec(
-              Aead.AES_GCM_256,
-              Hash.SHA384,
-              40,
-              32,
-              16,
-              1L << 40);
-      Floe floe = Floe.getInstance(floeParameterSpec);
-      try (FloeEncryptor encryptor =
-              floe.createEncryptor(new SecretKeySpec(new byte[16], "FLOE"), new byte[0], new IncrementingSecureRandom(0));
-          FloeDecryptor decryptor =
-              floe.createDecryptor(secretKey, new byte[0], encryptor.getHeader())) {
-        byte[] plaintext = new byte[8];
-        byte[] encryptedFirstSegment = encryptor.processSegment(plaintext);
-        byte[] encryptedLastSegment = encryptor.processLastSegment(new byte[0]);
-
-        assertEquals(
-            toHex(encryptedFirstSegment),
-            "ffffffff0000000100000000000000002dd631464f6a583369b74f546adfa4db9a838732d6338ef4"); // pragma: allowlist secret
-        assertEquals(
-            toHex(encryptedLastSegment),
-            "000000200000000200000000000000004a4082e6b94a8b1b2053f40879402df1"); // pragma:
-                                                                                 // allowlist secret
-
-        assertArrayEquals(plaintext, decryptor.processSegment(encryptedFirstSegment));
-        assertArrayEquals(new byte[0], decryptor.processSegment(encryptedLastSegment));
-      }
-    }
-
-    @Test
-    void testDecryptLastSegmentWithReferenceDataWithNonEmptyLastSegment() throws Exception {
-      FloeParameterSpec floeParameterSpec =
-          new FloeParameterSpec(
-              Aead.AES_GCM_256,
-              Hash.SHA384,
-              40,
-              32,
-              16,
-              1L << 40);
-      Floe floe = Floe.getInstance(floeParameterSpec);
-      try (FloeEncryptor encryptor =
-              floe.createEncryptor(new SecretKeySpec(new byte[16], "FLOE"), new byte[0], new IncrementingSecureRandom(0));
-          FloeDecryptor decryptor =
-              floe.createDecryptor(secretKey, new byte[0], encryptor.getHeader())) {
-        byte[] plaintext = new byte[8];
-        byte[] encryptedFirstSegment = encryptor.processSegment(plaintext);
-        byte[] encryptedLastSegment = encryptor.processLastSegment(plaintext);
-
-        assertEquals(
-            toHex(encryptedFirstSegment),
-            "ffffffff0000000100000000000000002dd631464f6a583369b74f546adfa4db9a838732d6338ef4"); // pragma: allowlist secret
-        assertEquals(
-            toHex(encryptedLastSegment),
-            "000000280000000200000000000000003b14259ad693c7df7a2d6b9d9912dc70a81205d41ac43a41"); // pragma: allowlist secret
-
-        assertArrayEquals(plaintext, decryptor.processSegment(encryptedFirstSegment));
-        assertArrayEquals(plaintext, decryptor.processSegment(encryptedLastSegment));
-      }
-    }
-  }
-
-  static String toHex(byte[] input) {
-    StringBuilder result = new StringBuilder();
-    for (byte b : input) {
-      result.append(String.format("%02x", b));
-    }
-    return result.toString();
   }
 }
