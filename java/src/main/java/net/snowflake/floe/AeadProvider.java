@@ -12,6 +12,12 @@ interface AeadProvider {
   byte[] encrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext)
       throws GeneralSecurityException;
 
+  byte[] encrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext, int offset, int length)
+      throws GeneralSecurityException;
+
   byte[] decrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] ciphertext)
+      throws GeneralSecurityException;
+
+  byte[] decrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] ciphertext, int offset, int length)
       throws GeneralSecurityException;
 }

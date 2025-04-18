@@ -99,6 +99,26 @@ class FloeTest {
     }
 
     @Test
+    void testSegmentEncryptedAndDecryptedWithOffsetAndLimit() throws Exception {
+      FloeParameterSpec parameterSpec =
+          new FloeParameterSpec(
+              Aead.AES_GCM_256,
+              Hash.SHA384,
+              40,
+              32,
+              4,
+              1L << 40);
+      Floe floe = Floe.getInstance(parameterSpec);
+      try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad, new IncrementingSecureRandom(678765));
+           FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
+        byte[] testData = new byte[]{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+        byte[] ciphertext = encryptor.processLastSegment(testData, 2, 4);
+        byte[] result = decryptor.processSegment(ciphertext);
+        assertArrayEquals(new byte[]{'c', 'd', 'e', 'f'}, result);
+      }
+    }
+
+    @Test
     void testSegmentEncryptedAndDecryptedWithRandomData() throws Exception {
       FloeParameterSpec parameterSpec =
           new FloeParameterSpec(

@@ -94,6 +94,19 @@ class FloeEncryptorImplTest {
   }
 
   @Test
+  void shouldThrowExceptionIfPlaintextOffsetAndLengthAreLargerThanSegmentSize() throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[8], 1, 8));
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+      assertEquals(e.getCause().getMessage(), "offset (1) + length (8) > input length (8)");
+
+      addLastSegment(encryptor);
+    }
+  }
+
+  @Test
   void shouldThrowEncryptionIfLastSegmentPlaintextIsTooLong() throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
