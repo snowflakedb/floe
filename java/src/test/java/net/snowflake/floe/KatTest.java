@@ -2,6 +2,7 @@ package net.snowflake.floe;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -9,6 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
@@ -50,6 +52,13 @@ class KatTest {
   @MethodSource("customParameters")
   void compareWithCustomData(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
     run(parameterSpec, fileNamePrefix);
+  }
+
+  @ParameterizedTest
+  @MethodSource("customParameters")
+  @Disabled
+  void generateNewKats(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
+    createKatFromPlaintext(parameterSpec, fileNamePrefix);
   }
 
   private static Stream<Arguments> customParameters() {
@@ -98,9 +107,44 @@ class KatTest {
       assertArrayEquals(expectedPlaintext, plaintext);
     }
   }
+
+  private void createKatFromPlaintext(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
+    byte[] plaintext = readFile(fileNamePrefix + "_pt.txt");
+    String ciphertextFile = fileNamePrefix + "_ct.txt";
+
+    Floe floe = Floe.getInstance(parameterSpec);
+
+    ByteBuffer plaintextBuffer = ByteBuffer.wrap(plaintext);
+
+    try (FloeEncryptor encryptor = floe.createEncryptor(referenceKey, referenceAad)) {
+      try (FileOutputStream ciphertextStream = new FileOutputStream(ciphertextFile)) {
+        ciphertextStream.write(byteArrayToHex(encryptor.getHeader()).getBytes(StandardCharsets.UTF_8));
+        while(plaintextBuffer.hasRemaining()) {
+          if (plaintextBuffer.remaining() < parameterSpec.getPlainTextSegmentLength()) {
+            byte[] plaintextSegment = new byte[plaintextBuffer.remaining()];
+            plaintextBuffer.get(plaintextSegment);
+            byte[] ciphertextSegment = encryptor.processLastSegment(plaintextSegment);
+            ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
+          } else {
+            byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
+            plaintextBuffer.get(plaintextSegment);
+            byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment);
+            ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
+          }
+        }
+      }
+    }
+  }
   
   private static byte[] readFile(String fileName) throws Exception {
     String hexFileContent = IOUtils.toString(KatTest.class.getClassLoader().getResource(fileName)).trim();
     return Hex.decodeHex(hexFileContent);
+  }
+
+  private static String byteArrayToHex(byte[] a) {
+    StringBuilder sb = new StringBuilder(a.length * 2);
+    for(byte b: a)
+      sb.append(String.format("%02x", b));
+    return sb.toString();
   }
 }

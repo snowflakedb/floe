@@ -37,3 +37,14 @@ class DekTagFloePurpose implements FloePurpose {
     return bytes;
   }
 }
+
+class MessageKeyPurpose implements FloePurpose {
+  private static final byte[] bytes = "MESSAGE_KEY:".getBytes(StandardCharsets.UTF_8);
+
+  static final MessageKeyPurpose INSTANCE = new MessageKeyPurpose();
+
+  @Override
+  public byte[] generate() {
+    return bytes;
+  }
+}
