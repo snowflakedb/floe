@@ -1,12 +1,13 @@
 package net.snowflake.floe;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 class AeadKey {
   private final SecretKey key;
 
-  AeadKey(SecretKey key) {
-    this.key = key;
+  AeadKey(byte[] key, String algorithm) {
+    this.key = new SecretKeySpec(key, algorithm);
   }
 
   SecretKey getKey() {

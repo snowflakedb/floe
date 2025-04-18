@@ -1,7 +1,5 @@
 package net.snowflake.floe;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.Closeable;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -29,7 +27,7 @@ abstract class BaseSegmentProcessor implements Closeable {
     this.floeAad = floeAad;
     this.keyDerivator = new KeyDerivator(parameterSpec);
     try {
-      this.messageKey = new MessageKey(new SecretKeySpec(keyDerivator.hkdfExpandMessageKey(floeKey, floeIv, floeAad, parameterSpec.getHash().getLength()), "FLOE_MSG_KEY"));
+      this.messageKey = keyDerivator.hkdfExpandMessageKey(floeKey, floeIv, floeAad);
     } catch (NoSuchAlgorithmException | InvalidKeyException e) {
       throw new FloeException(e);
     }
@@ -59,15 +57,12 @@ abstract class BaseSegmentProcessor implements Closeable {
   }
 
   private AeadKey deriveKey(MessageKey secretKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
-    byte[] keyBytes =
-        keyDerivator.hkdfExpandAeadKey(
+    return keyDerivator.hkdfExpandAeadKey(
             secretKey,
             floeIv,
             floeAad,
-            new DekTagFloePurpose(segmentCounter),
-            parameterSpec.getAead().getKeyLength());
-    SecretKey key = new SecretKeySpec(keyBytes, parameterSpec.getAead().getJceKeyTypeName());
-    return new AeadKey(key);
+            new DekTagFloePurpose(segmentCounter)
+    );
   }
 
   protected void closeInternal() {

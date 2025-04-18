@@ -25,7 +25,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
       byte[] floeIvBytes = floeIv.getBytes();
       byte[] headerTag =
           keyDerivator.hkdfExpandHeaderTag(
-              floeKey, floeIv, floeAad, headerTagLength);
+              floeKey, floeIv, floeAad);
 
       ByteBuffer result =
           ByteBuffer.allocate(parametersEncoded.length + floeIvBytes.length + headerTag.length);

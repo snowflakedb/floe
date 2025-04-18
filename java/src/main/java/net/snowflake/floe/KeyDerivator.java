@@ -7,6 +7,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import static net.snowflake.floe.BaseSegmentProcessor.headerTagLength;
+
 class KeyDerivator {
   private final FloeParameterSpec parameterSpec;
 
@@ -14,16 +16,16 @@ class KeyDerivator {
     this.parameterSpec = parameterSpec;
   }
 
-  byte[] hkdfExpandMessageKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, int length) throws NoSuchAlgorithmException, InvalidKeyException {
-    return hkdfExpand(floeKey.getKey(), floeIv, floeAad, MessageKeyPurpose.INSTANCE, length);
+  MessageKey hkdfExpandMessageKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad) throws NoSuchAlgorithmException, InvalidKeyException {
+    return new MessageKey((hkdfExpand(floeKey.getKey(), floeIv, floeAad, MessageKeyPurpose.INSTANCE, parameterSpec.getHash().getLength())));
   }
 
-  byte[] hkdfExpandAeadKey(MessageKey messageKey, FloeIv floeIv, FloeAad floeAad, DekTagFloePurpose purpose, int length) throws NoSuchAlgorithmException, InvalidKeyException {
-    return hkdfExpand(messageKey.getKey(), floeIv, floeAad, purpose, length);
+  AeadKey hkdfExpandAeadKey(MessageKey messageKey, FloeIv floeIv, FloeAad floeAad, DekTagFloePurpose purpose) throws NoSuchAlgorithmException, InvalidKeyException {
+    return new AeadKey(hkdfExpand(messageKey.getKey(), floeIv, floeAad, purpose, parameterSpec.getAead().getKeyLength()), parameterSpec.getAead().getJceKeyTypeName());
   }
 
-  byte[] hkdfExpandHeaderTag(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, int length) throws NoSuchAlgorithmException, InvalidKeyException {
-    return hkdfExpand(floeKey.getKey(), floeIv, floeAad, HeaderTagFloePurpose.INSTANCE, length);
+  byte[] hkdfExpandHeaderTag(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad) throws NoSuchAlgorithmException, InvalidKeyException {
+    return hkdfExpand(floeKey.getKey(), floeIv, floeAad, HeaderTagFloePurpose.INSTANCE, headerTagLength);
   }
 
   private byte[] hkdfExpand(

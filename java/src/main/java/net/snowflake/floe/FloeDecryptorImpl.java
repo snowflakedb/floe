@@ -39,7 +39,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
     try {
       byte[] headerTag =
           keyDerivator.hkdfExpandHeaderTag(
-              floeKey, floeIv, this.floeAad, headerTagLength);
+              floeKey, floeIv, this.floeAad);
       if (!MessageDigest.isEqual(headerTag, headerTagFromHeader)) {
         throw new IllegalArgumentException("invalid header tag");
       }
