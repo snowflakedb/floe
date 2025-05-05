@@ -10,7 +10,6 @@ import java.security.SecureRandom;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FloeTest {
@@ -55,11 +54,8 @@ class FloeTest {
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
         byte[] header = encryptor.getHeader();
         header[11]++;
-        FloeException e =
-            assertThrows(
-                FloeException.class, () -> floe.createDecryptor(secretKey, aad, header));
-        assertInstanceOf(IllegalArgumentException.class, e.getCause());
-        assertEquals(e.getCause().getMessage(), "invalid header tag");
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, header));
+        assertEquals(e.getMessage(), "invalid header tag");
         encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
       }
     }
@@ -72,11 +68,8 @@ class FloeTest {
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
         byte[] header = encryptor.getHeader();
         header[header.length - 3]++;
-        FloeException e =
-            assertThrows(
-                FloeException.class, () -> floe.createDecryptor(secretKey, aad, header));
-        assertInstanceOf(IllegalArgumentException.class, e.getCause());
-        assertEquals(e.getCause().getMessage(), "invalid header tag");
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, header));
+        assertEquals(e.getMessage(), "invalid header tag");
         encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
       }
     }

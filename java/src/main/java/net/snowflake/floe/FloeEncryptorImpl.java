@@ -12,33 +12,11 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   private final byte[] header;
 
-  FloeEncryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, SecureRandom random) {
-    super(parameterSpec, FloeIv.generateRandom(random, parameterSpec.getFloeIvLength()), floeKey, floeAad);
+  FloeEncryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, byte[] header, SecureRandom random) {
+    super(parameterSpec, floeIv, floeKey, floeAad);
     this.aeadProvider = parameterSpec.getAead().getAeadProvider();
-    this.header = buildHeader(floeKey);
+    this.header = header;
     this.random = random;
-  }
-
-  private byte[] buildHeader(FloeKey floeKey) {
-    try {
-      byte[] parametersEncoded = parameterSpec.getEncodedParams();
-      byte[] floeIvBytes = floeIv.getBytes();
-      byte[] headerTag =
-          keyDerivator.hkdfExpandHeaderTag(
-              floeKey, floeIv, floeAad);
-
-      ByteBuffer result =
-          ByteBuffer.allocate(parametersEncoded.length + floeIvBytes.length + headerTag.length);
-      result.put(parametersEncoded);
-      result.put(floeIvBytes);
-      result.put(headerTag);
-      if (result.hasRemaining()) {
-        throw new IllegalArgumentException("Header is too long");
-      }
-      return result.array();
-    } catch (Exception e) {
-      throw new FloeException(e);
-    }
   }
 
   @Override

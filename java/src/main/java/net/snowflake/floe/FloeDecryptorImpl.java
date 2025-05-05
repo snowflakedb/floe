@@ -2,7 +2,6 @@ package net.snowflake.floe;
 
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
 
 // This class is not thread-safe!
 class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
@@ -10,48 +9,9 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
 
   private long segmentCounter;
 
-  FloeDecryptorImpl(
-      FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, byte[] floeHeaderAsBytes) {
-    super(parameterSpec, extractFloeIv(parameterSpec, floeHeaderAsBytes), floeKey, floeAad);
-    byte[] encodedParams = this.parameterSpec.getEncodedParams();
-    int expectedHeaderLength = encodedParams.length
-        + this.parameterSpec.getFloeIvLength()
-        + headerTagLength;
-    if (floeHeaderAsBytes.length
-        != expectedHeaderLength) {
-      throw new IllegalArgumentException(String.format("invalid header length, expected %d, got %d", encodedParams.length, expectedHeaderLength));
-    }
-    ByteBuffer floeHeader = ByteBuffer.wrap(floeHeaderAsBytes);
-
-    byte[] encodedParamsFromHeader = new byte[10];
-    floeHeader.get(encodedParamsFromHeader, 0, encodedParamsFromHeader.length);
-    if (!MessageDigest.isEqual(encodedParams, encodedParamsFromHeader)) {
-      throw new IllegalArgumentException("invalid parameters header");
-    }
-
+  FloeDecryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeIv floeIv, FloeAad floeAad) {
+    super(parameterSpec, floeIv, floeKey, floeAad);
     this.aeadProvider = parameterSpec.getAead().getAeadProvider();
-
-    byte[] headerTagFromHeader = new byte[headerTagLength];
-    // the IV was read before
-    floeHeader.position(floeHeader.position() + this.parameterSpec.getFloeIvLength());
-    floeHeader.get(headerTagFromHeader, 0, headerTagFromHeader.length);
-
-    try {
-      byte[] headerTag =
-          keyDerivator.hkdfExpandHeaderTag(
-              floeKey, floeIv, this.floeAad);
-      if (!MessageDigest.isEqual(headerTag, headerTagFromHeader)) {
-        throw new IllegalArgumentException("invalid header tag");
-      }
-    } catch (Exception e) {
-      throw new FloeException("error while validating FLOE header", e);
-    }
-  }
-
-  private static FloeIv extractFloeIv(FloeParameterSpec parameterSpec, byte[] floeHeader) {
-    byte[] floeIvBytes = new byte[parameterSpec.getFloeIvLength()];
-    System.arraycopy(floeHeader, 10, floeIvBytes, 0, parameterSpec.getFloeIvLength());
-    return new FloeIv(floeIvBytes);
   }
 
   @Override

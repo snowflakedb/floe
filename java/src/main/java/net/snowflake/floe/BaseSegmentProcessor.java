@@ -1,8 +1,6 @@
 package net.snowflake.floe;
 
 import java.io.Closeable;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.function.Supplier;
 
 abstract class BaseSegmentProcessor implements Closeable {
@@ -26,11 +24,7 @@ abstract class BaseSegmentProcessor implements Closeable {
     this.floeIv = floeIv;
     this.floeAad = floeAad;
     this.keyDerivator = new KeyDerivator(parameterSpec);
-    try {
-      this.messageKey = keyDerivator.hkdfExpandMessageKey(floeKey, floeIv, floeAad);
-    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-      throw new FloeException(e);
-    }
+    this.messageKey = keyDerivator.hkdfExpandMessageKey(floeKey, floeIv, floeAad);
   }
 
   protected byte[] processInternal(Supplier<byte[]> processFunc) {
@@ -48,7 +42,7 @@ abstract class BaseSegmentProcessor implements Closeable {
     }
   }
 
-  protected AeadKey getKey(MessageKey messageKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
+  protected AeadKey getKey(MessageKey messageKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) {
     if (currentAeadKey == null || segmentCounter % parameterSpec.getKeyRotationMask() == 0) {
       // we don't need masking, because we derive a new key only when key rotation happens
       currentAeadKey = deriveKey(messageKey, floeIv, floeAad, segmentCounter);
@@ -56,12 +50,12 @@ abstract class BaseSegmentProcessor implements Closeable {
     return currentAeadKey;
   }
 
-  private AeadKey deriveKey(MessageKey secretKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) throws NoSuchAlgorithmException, InvalidKeyException {
+  private AeadKey deriveKey(MessageKey secretKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) {
     return keyDerivator.hkdfExpandAeadKey(
             secretKey,
             floeIv,
             floeAad,
-            new DekTagFloePurpose(segmentCounter)
+            segmentCounter
     );
   }
 

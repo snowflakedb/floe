@@ -22,6 +22,7 @@ class FloeEncryptorImplTest {
 
   @Test
   void shouldCreateCorrectHeader() throws Exception {
+    IncrementingSecureRandom random = new IncrementingSecureRandom(18);
     FloeParameterSpec parameterSpec =
         new FloeParameterSpec(
             Aead.AES_GCM_256,
@@ -30,9 +31,8 @@ class FloeEncryptorImplTest {
             4,
             4,
             1L << 40);
-    FloeKey floeKey = new FloeKey(new SecretKeySpec(new byte[32], "FLOE"));
-    FloeAad floeAad = new FloeAad("test aad".getBytes(StandardCharsets.UTF_8));
-    try (FloeEncryptor encryptor = new FloeEncryptorImpl(parameterSpec, floeKey, floeAad, new IncrementingSecureRandom(18))) {
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(new SecretKeySpec(new byte[32], "FLOE"), "test aad".getBytes(StandardCharsets.UTF_8), random)) {
       byte[] header = encryptor.getHeader();
       // AEAD ID
       assertEquals(Aead.AES_GCM_256.getId(), header[0]);
