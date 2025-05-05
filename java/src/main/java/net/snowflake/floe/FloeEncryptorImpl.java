@@ -86,7 +86,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   @Override
-  public byte[] processLastSegment(byte[] input, int offset, int length) {
+  public byte[] processLastSegment(byte[] input, int offset, final int length) {
     // just for convenience - streams returns -1 when there is no more data, and we would like to
     // treat it as a last 0-length segment
     if (length == -1) {
