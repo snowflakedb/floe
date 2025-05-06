@@ -100,7 +100,7 @@ class FloeEncryptorImplTest {
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[8], 1, 8));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals(e.getCause().getMessage(), "offset (1) + length (8) > input length (8)");
+      assertEquals(e.getCause().getMessage(), "invalid offset (1) and length (8) for input length (8)");
 
       addLastSegment(encryptor);
     }
