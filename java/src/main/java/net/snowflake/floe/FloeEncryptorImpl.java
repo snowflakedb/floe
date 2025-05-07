@@ -5,7 +5,6 @@ import java.security.SecureRandom;
 
 // This class is not thread-safe!
 class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
-  private final FloeIv floeIv;
   private final AeadProvider aeadProvider;
   private final SecureRandom random;
 
@@ -13,35 +12,11 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   private final byte[] header;
 
-  FloeEncryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeAad floeAad, SecureRandom random) {
-    super(parameterSpec, floeKey, floeAad);
-    this.floeIv =
-        FloeIv.generateRandom(random, parameterSpec.getFloeIvLength());
+  FloeEncryptorImpl(FloeParameterSpec parameterSpec, FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, byte[] header, SecureRandom random) {
+    super(parameterSpec, floeIv, floeKey, floeAad);
     this.aeadProvider = parameterSpec.getAead().getAeadProvider();
-    this.header = buildHeader();
+    this.header = header;
     this.random = random;
-  }
-
-  private byte[] buildHeader() {
-    try {
-      byte[] parametersEncoded = parameterSpec.getEncodedParams();
-      byte[] floeIvBytes = floeIv.getBytes();
-      byte[] headerTag =
-          keyDerivator.hkdfExpand(
-              floeKey, floeIv, floeAad, HeaderTagFloePurpose.INSTANCE, headerTagLength);
-
-      ByteBuffer result =
-          ByteBuffer.allocate(parametersEncoded.length + floeIvBytes.length + headerTag.length);
-      result.put(parametersEncoded);
-      result.put(floeIvBytes);
-      result.put(headerTag);
-      if (result.hasRemaining()) {
-        throw new IllegalArgumentException("Header is too long");
-      }
-      return result.array();
-    } catch (Exception e) {
-      throw new FloeException(e);
-    }
   }
 
   @Override
@@ -55,7 +30,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
       try {
         verifySegmentLength(input);
         verifyMaxSegmentNumberNotReached();
-        AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
+        AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
         AeadIv aeadIv =
             AeadIv.generateRandom(
                 random, parameterSpec.getAead().getIvLength());
@@ -100,7 +75,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
     return processInternal(() -> {
       try {
         verifyLastSegmentLength(input);
-        AeadKey aeadKey = getKey(floeKey, floeIv, floeAad, segmentCounter);
+        AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
         AeadIv aeadIv =
             AeadIv.generateRandom(
                 random, parameterSpec.getAead().getIvLength());

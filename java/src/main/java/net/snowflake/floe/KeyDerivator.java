@@ -1,10 +1,13 @@
 package net.snowflake.floe;
 
 import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+
+import static net.snowflake.floe.BaseSegmentProcessor.headerTagLength;
 
 class KeyDerivator {
   private final FloeParameterSpec parameterSpec;
@@ -13,8 +16,20 @@ class KeyDerivator {
     this.parameterSpec = parameterSpec;
   }
 
-  byte[] hkdfExpand(
-      FloeKey floeKey, FloeIv floeIv, FloeAad floeAad, FloePurpose purpose, int length) throws NoSuchAlgorithmException, InvalidKeyException {
+  MessageKey hkdfExpandMessageKey(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad) {
+    return new MessageKey(hkdfExpand(floeKey.getKey(), floeIv, floeAad, MessageKeyPurpose.INSTANCE, parameterSpec.getHash().getLength()));
+  }
+
+  AeadKey hkdfExpandAeadKey(MessageKey messageKey, FloeIv floeIv, FloeAad floeAad, long segmentCounter) {
+    return new AeadKey(hkdfExpand(messageKey.getKey(), floeIv, floeAad, new DekTagFloePurpose(segmentCounter), parameterSpec.getAead().getKeyLength()), parameterSpec.getAead().getJceKeyTypeName());
+  }
+
+  byte[] hkdfExpandHeaderTag(FloeKey floeKey, FloeIv floeIv, FloeAad floeAad) {
+    return hkdfExpand(floeKey.getKey(), floeIv, floeAad, HeaderTagFloePurpose.INSTANCE, headerTagLength);
+  }
+
+  private byte[] hkdfExpand(
+      SecretKey secretKey, FloeIv floeIv, FloeAad floeAad, FloePurpose purpose, int length) {
     byte[] encodedParams = parameterSpec.getEncodedParams();
     byte[] purposeBytes = purpose.generate();
     ByteBuffer info =
@@ -27,18 +42,22 @@ class KeyDerivator {
     info.put(floeIv.getBytes());
     info.put(purposeBytes);
     info.put(floeAad.getBytes());
-    return hkdfExpandInternal(parameterSpec.getHash(), floeKey, info.array(), length);
+    return hkdfExpandInternal(parameterSpec.getHash(), secretKey, info.array(), length);
   }
 
-  private byte[] hkdfExpandInternal(Hash hash, FloeKey prk, byte[] info, int len) throws NoSuchAlgorithmException, InvalidKeyException {
-    Mac mac = Mac.getInstance(hash.getJceHmacName());
-    mac.init(prk.getKey());
-    mac.update(info);
-    mac.update((byte) 1);
-    byte[] bytes = mac.doFinal();
-    if (bytes.length != len) {
-      return Arrays.copyOf(bytes, len);
+  private byte[] hkdfExpandInternal(Hash hash, SecretKey prk, byte[] info, int len) {
+    try {
+      Mac mac = Mac.getInstance(hash.getJceHmacName());
+      mac.init(prk);
+      mac.update(info);
+      mac.update((byte) 1);
+      byte[] bytes = mac.doFinal();
+      if (bytes.length != len) {
+        return Arrays.copyOf(bytes, len);
+      }
+      return bytes;
+    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+      throw new FloeException(e);
     }
-    return bytes;
   }
 }
