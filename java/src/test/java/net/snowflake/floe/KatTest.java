@@ -120,17 +120,10 @@ class KatTest {
       try (FileOutputStream ciphertextStream = new FileOutputStream(ciphertextFile)) {
         ciphertextStream.write(byteArrayToHex(encryptor.getHeader()).getBytes(StandardCharsets.UTF_8));
         while(plaintextBuffer.hasRemaining()) {
-          if (plaintextBuffer.remaining() < parameterSpec.getPlainTextSegmentLength()) {
-            byte[] plaintextSegment = new byte[plaintextBuffer.remaining()];
-            plaintextBuffer.get(plaintextSegment);
-            byte[] ciphertextSegment = encryptor.processLastSegment(plaintextSegment);
-            ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
-          } else {
-            byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
-            plaintextBuffer.get(plaintextSegment);
-            byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment);
-            ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
-          }
+          byte[] plaintextSegment = new byte[plaintextBuffer.remaining()];
+          plaintextBuffer.get(plaintextSegment);
+          byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment);
+          ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
         }
       }
     }

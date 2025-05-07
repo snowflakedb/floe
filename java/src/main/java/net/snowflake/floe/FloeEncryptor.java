@@ -6,8 +6,10 @@ package net.snowflake.floe;
 public interface FloeEncryptor extends AutoCloseable {
   /**
    * Processes given plaintext to ciphertext.
-   * This function is to be used only with non terminal segments.
-   * Plaintext must be of the size specified by {@link FloeParameterSpec#getPlainTextSegmentLength()}.
+   * Plaintext must be of the size specified by {@link FloeParameterSpec#getPlainTextSegmentLength()} or less.
+   * If segment size is equal to {@link FloeParameterSpec#getPlainTextSegmentLength()}, non terminal segment is assumed.
+   * If segment size is lower than {@link FloeParameterSpec#getPlainTextSegmentLength()}, it is assumed to be terminal.
+   * Empty segment is also accepted as the terminal segment.
    *
    * @param plaintext plaintext to be encrypted.
    * @return ciphertext.
@@ -16,8 +18,10 @@ public interface FloeEncryptor extends AutoCloseable {
 
   /**
    * Processes given plaintext to ciphertext.
-   * This function is to be used only with non terminal segments.
-   * Plaintext must be of the size specified by {@link FloeParameterSpec#getPlainTextSegmentLength()}.
+   * Plaintext must be of the size specified by {@link FloeParameterSpec#getPlainTextSegmentLength()} or less.
+   * If segment size is equal to {@link FloeParameterSpec#getPlainTextSegmentLength()}, non terminal segment is assumed.
+   * If segment size is lower than {@link FloeParameterSpec#getPlainTextSegmentLength()}, it is assumed to be terminal.
+   * Empty segment is also accepted as the terminal segment.
    *
    * @param plaintext plaintext to be encrypted.
    * @param offset index of the first byte to process.
@@ -25,30 +29,6 @@ public interface FloeEncryptor extends AutoCloseable {
    * @return ciphertext.
    */
   byte[] processSegment(byte[] plaintext, int offset, int length);
-
-  /**
-   * Processes given ciphertext to plaintext.
-   * This function is to be used only with terminal segments.
-   * This function needs to be called exactly once.
-   * Segment may be empty or at most {@link FloeParameterSpec#getPlainTextSegmentLength()} long.
-   *
-   * @param plaintext plaintext to be encrypted.
-   * @return ciphertext.
-   */
-  byte[] processLastSegment(byte[] plaintext);
-
-  /**
-   * Processes given ciphertext to plaintext.
-   * This function is to be used only with terminal segments.
-   * This function needs to be called exactly once.
-   * Segment may be empty or at most {@link FloeParameterSpec#getPlainTextSegmentLength()} long.
-   *
-   * @param plaintext plaintext to be encrypted.
-   * @param offset index of the first byte to process.
-   * @param length how many bytes should be processed.
-   * @return ciphertext.
-   */
-  byte[] processLastSegment(byte[] plaintext, int offset, int length);
 
   /**
    * Returns header for this FLOE instance, that is required for decryption.

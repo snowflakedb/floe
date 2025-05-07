@@ -26,7 +26,7 @@ class FloeTest {
 
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
           FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-        decryptor.processSegment(encryptor.processLastSegment(new byte[0]));
+        decryptor.processSegment(encryptor.processSegment(new byte[0]));
       }
     }
 
@@ -42,7 +42,7 @@ class FloeTest {
             assertThrows(
                 IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, header));
         assertEquals(e.getMessage(), "invalid parameters header");
-        encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
+        encryptor.processSegment(new byte[0]); // ensure encryptor is closed
       }
     }
 
@@ -56,7 +56,7 @@ class FloeTest {
         header[11]++;
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, header));
         assertEquals(e.getMessage(), "invalid header tag");
-        encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
+        encryptor.processSegment(new byte[0]); // ensure encryptor is closed
       }
     }
 
@@ -70,7 +70,7 @@ class FloeTest {
         header[header.length - 3]++;
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, header));
         assertEquals(e.getMessage(), "invalid header tag");
-        encryptor.processLastSegment(new byte[0]); // ensure encryptor is closed
+        encryptor.processSegment(new byte[0]); // ensure encryptor is closed
       }
     }
   }
@@ -92,9 +92,10 @@ class FloeTest {
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad, new IncrementingSecureRandom(678765));
           FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
         byte[] testData = new byte[8];
-        byte[] ciphertext = encryptor.processLastSegment(testData);
+        byte[] ciphertext = encryptor.processSegment(testData);
         byte[] result = decryptor.processSegment(ciphertext);
         assertArrayEquals(testData, result);
+        closeEncryptorAndDecryptor(encryptor, decryptor);
       }
     }
 
@@ -112,7 +113,7 @@ class FloeTest {
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad, new IncrementingSecureRandom(678765));
            FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
         byte[] testData = new byte[]{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
-        byte[] ciphertext = encryptor.processLastSegment(testData, 2, 4);
+        byte[] ciphertext = encryptor.processSegment(testData, 2, 4);
         byte[] result = decryptor.processSegment(ciphertext);
         assertArrayEquals(new byte[]{'c', 'd', 'e', 'f'}, result);
       }
@@ -134,9 +135,10 @@ class FloeTest {
           FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
         byte[] testData = new byte[8];
         new SecureRandom().nextBytes(testData);
-        ciphertext = encryptor.processLastSegment(testData);
+        ciphertext = encryptor.processSegment(testData);
         byte[] result = decryptor.processSegment(ciphertext);
         assertArrayEquals(testData, result);
+        closeEncryptorAndDecryptor(encryptor, decryptor);
       }
     }
 
@@ -159,9 +161,15 @@ class FloeTest {
           byte[] result = decryptor.processSegment(ciphertext);
           assertArrayEquals(testData, result);
         }
-        byte[] ciphertext = encryptor.processLastSegment(testData);
+        byte[] ciphertext = encryptor.processSegment(testData);
         decryptor.processSegment(ciphertext);
+        closeEncryptorAndDecryptor(encryptor, decryptor);
       }
+    }
+
+    private void closeEncryptorAndDecryptor(FloeEncryptor encryptor, FloeDecryptor decryptor) {
+      byte[] lastSegment = encryptor.processSegment(new byte[0]);
+      decryptor.processSegment(lastSegment);
     }
   }
 
@@ -175,7 +183,7 @@ class FloeTest {
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
            FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
         byte[] plaintext = new byte[3];
-        byte[] encrypted = encryptor.processLastSegment(plaintext);
+        byte[] encrypted = encryptor.processSegment(plaintext);
         byte[] decrypted = decryptor.processSegment(encrypted);
         assertArrayEquals(plaintext, decrypted);
       }

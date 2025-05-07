@@ -28,7 +28,7 @@ class FloeDecryptorImplTest {
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
       byte[] firstSegment = encryptor.processSegment(new byte[8]);
-      byte[] lastSegment = encryptor.processLastSegment(new byte[4]);
+      byte[] lastSegment = encryptor.processSegment(new byte[4]);
 
       assertArrayEquals(new byte[8], decryptor.processSegment(firstSegment));
       assertFalse(decryptor.isClosed());
@@ -43,63 +43,50 @@ class FloeDecryptorImplTest {
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      byte[] lastSegment = encryptor.processLastSegment(new byte[0]);
+      byte[] lastSegment = encryptor.processSegment(new byte[0]);
       assertArrayEquals(new byte[0], decryptor.processSegment(lastSegment));
     }
   }
 
-  @Test
-  void shouldDecryptLastSegmentFullLength() throws Exception {
+  @ParameterizedTest
+  @CsvSource({
+      "8, false", // non terminal segment
+      "7, true" // terminal segment
+  })
+  void shouldThrowExceptionIfSegmentLengthIsMismatched(int plaintextSegmentLength, boolean isTerminal) throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      byte[] lastSegment = encryptor.processLastSegment(new byte[8]);
-      assertArrayEquals(new byte[8], decryptor.processSegment(lastSegment));
-    }
-  }
-
-  @Test
-  void shouldThrowExceptionIfSegmentLengthIsMismatched() throws Exception {
-    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
-    Floe floe = Floe.getInstance(parameterSpec);
-    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
-        FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      byte[] ciphertext = encryptor.processSegment(new byte[8]);
+      byte[] ciphertext = encryptor.processSegment(new byte[plaintextSegmentLength]);
       byte[] prunedCiphertext = new byte[12];
       ByteBuffer.wrap(ciphertext).get(prunedCiphertext);
-      FloeException e =
-          assertThrows(
-              FloeException.class, () -> decryptor.processSegment(prunedCiphertext));
+      FloeException e = assertThrows(FloeException.class, () -> decryptor.processSegment(prunedCiphertext));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals("segment length mismatch, expected 40, got 12", e.getCause().getMessage());
+      assertEquals("segment length too short, expected at least 32, got 12", e.getCause().getMessage());
       byte[] extendedCiphertext = new byte[1024];
       ByteBuffer.wrap(extendedCiphertext).put(ciphertext);
-      e =
-          assertThrows(
-              FloeException.class, () -> decryptor.processSegment(extendedCiphertext));
+      e = assertThrows(FloeException.class, () -> decryptor.processSegment(extendedCiphertext));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals("segment length mismatch, expected 40, got 1024", e.getCause().getMessage());
-      encryptor.processLastSegment(new byte[4]);
+      assertEquals("segment length mismatch, expected at most 40, got 1024", e.getCause().getMessage());
+      if (!isTerminal) {
+        encryptor.processSegment(new byte[0]);
+      }
     }
   }
 
-  @ParameterizedTest
-  @CsvSource(value = {
-      "12,last segment is too short",
-      "1024,last segment is too long"
-  })
-  void shouldThrowExceptionIfLastSegmentLengthIsMismatched(int segmentSize, String expectedErrorMessage) throws Exception {
+  @Test
+  void shouldThrowExceptionIfLastSegmentLengthIsMismatched() throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      encryptor.processLastSegment(new byte[4]);
+      encryptor.processSegment(new byte[4]);
       FloeException e =
           assertThrows(
-              FloeException.class, () -> decryptor.processSegment(new byte[segmentSize]));
+              FloeException.class, () -> decryptor.processSegment(new byte[12]));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals(expectedErrorMessage, e.getCause().getMessage());
+      assertEquals("segment length too short, expected at least 32, got 12", e.getCause().getMessage());
     }
   }
 
@@ -109,12 +96,12 @@ class FloeDecryptorImplTest {
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      encryptor.processLastSegment(new byte[4]);
+      encryptor.processSegment(new byte[4]);
       FloeException e =
           assertThrows(
               FloeException.class, () -> decryptor.processSegment(new byte[40]));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
-      assertEquals("last segment length marker mismatch, expected: 40, got: 0", e.getCause().getMessage());
+      assertEquals("segment length mismatch, expected 0, got 40", e.getCause().getMessage());
     }
   }
 
@@ -124,11 +111,14 @@ class FloeDecryptorImplTest {
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
-      byte[] ciphertext = encryptor.processLastSegment(new byte[8]);
+      byte[] ciphertext = encryptor.processSegment(new byte[8]);
       ciphertext[39]++;
       FloeException e =
           assertThrows(FloeException.class, () -> decryptor.processSegment(ciphertext));
       assertInstanceOf(AEADBadTagException.class, e.getCause());
+
+      // closing
+      encryptor.processSegment(new byte[0]);
     }
   }
 
@@ -140,7 +130,7 @@ class FloeDecryptorImplTest {
         FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader())) {
       byte[] ciphertext1 = encryptor.processSegment(new byte[8]);
       byte[] ciphertext2 = encryptor.processSegment(new byte[8]);
-      encryptor.processLastSegment(new byte[4]);
+      encryptor.processSegment(new byte[4]);
       FloeException e =
           assertThrows(FloeException.class, () -> decryptor.processSegment(ciphertext2));
       assertInstanceOf(AEADBadTagException.class, e.getCause());
@@ -153,7 +143,7 @@ class FloeDecryptorImplTest {
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       byte[] ciphertext1 = encryptor.processSegment(new byte[8]);
-      byte[] ciphertext2 = encryptor.processLastSegment(new byte[4]);
+      byte[] ciphertext2 = encryptor.processSegment(new byte[4]);
       FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, encryptor.getHeader());
       decryptor.processSegment(ciphertext1);
       assertThrows(IllegalStateException.class, decryptor::close);
