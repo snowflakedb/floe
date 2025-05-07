@@ -6,6 +6,7 @@ import java.security.GeneralSecurityException;
 // This class is not thread-safe!
 class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   private final AeadProvider aeadProvider;
+  private final int minimalSegmentLength = 4 /* segment size marker */ + parameterSpec.getAead().getIvLength() + parameterSpec.getAead().getAuthTagLength();
 
   private long segmentCounter;
 
@@ -20,90 +21,58 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input, int offset, int length) {
+  public byte[] processSegment(byte[] input, int offset, final int length) {
+    if (length == -1) {
+      return processSegment(input, offset, 0);
+    }
     return processInternal(() -> {
-      ByteBuffer inputBuffer = ByteBuffer.wrap(input, offset, length);
+      ByteBuffer inputBuf = ByteBuffer.wrap(input, offset, length);
       try {
-        if (isLastSegment(inputBuffer)) {
-          return processLastSegment(inputBuffer);
-        } else {
-          return processNonLastSegment(inputBuffer);
+        verifyMinimalSegmentLength(inputBuf);
+        verifySegmentNotTooLong(inputBuf);
+        boolean isTerminal = isTerminal(inputBuf);
+        verifySegmentSizeWithSegmentSizeMarker(inputBuf, isTerminal);
+        AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
+        AeadIv aeadIv = AeadIv.from(inputBuf, parameterSpec.getAead().getIvLength());
+        AeadAad aeadAad = isTerminal ? AeadAad.terminal(segmentCounter) : AeadAad.nonTerminal(segmentCounter);
+        byte[] decrypted =
+            aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, inputBuf.array(), inputBuf.position(), inputBuf.remaining());
+        if (isTerminal) {
+          closeInternal();
         }
+        segmentCounter++;
+        return decrypted;
       } catch (GeneralSecurityException e) {
         throw new FloeException(e);
       }
     });
   }
 
-  private boolean isLastSegment(ByteBuffer inputBuffer) {
-    final ByteBuffer workingBuffer = inputBuffer.duplicate();
+  private void verifyMinimalSegmentLength(ByteBuffer inputBuf) {
+    if (inputBuf.remaining() < minimalSegmentLength) {
+      throw new IllegalArgumentException(String.format("segment length too short, expected at least %d, got %d", minimalSegmentLength, inputBuf.remaining()));
+    }
+  }
+
+  private boolean isTerminal(ByteBuffer inputBuf) {
+    final ByteBuffer workingBuffer = inputBuf.duplicate();
     return workingBuffer.getInt() != NON_TERMINAL_SEGMENT_SIZE_MARKER;
   }
 
-  private byte[] processNonLastSegment(ByteBuffer inputBuf) throws GeneralSecurityException {
-    verifyNonLastSegmentLength(inputBuf);
-    verifySegmentSizeMarker(inputBuf);
-    AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
-    AeadIv aeadIv = AeadIv.from(inputBuf, parameterSpec.getAead().getIvLength());
-    AeadAad aeadAad = AeadAad.nonTerminal(segmentCounter);
-    byte[] ciphertext = new byte[inputBuf.remaining()];
-    inputBuf.get(ciphertext);
-    byte[] decrypted =
-        aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, ciphertext);
-    segmentCounter++;
-    return decrypted;
-  }
-
-  private void verifyNonLastSegmentLength(ByteBuffer inputBuf) {
-    if (inputBuf.capacity() != parameterSpec.getEncryptedSegmentLength()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "segment length mismatch, expected %d, got %d",
-              parameterSpec.getEncryptedSegmentLength(), inputBuf.capacity()));
+  private void verifySegmentNotTooLong(ByteBuffer inputBuf) {
+    if (inputBuf.remaining() > parameterSpec.getEncryptedSegmentLength()) {
+      throw new IllegalArgumentException(String.format("segment length mismatch, expected at most %d, got %d", parameterSpec.getEncryptedSegmentLength(), inputBuf.remaining()));
     }
   }
 
-  private void verifySegmentSizeMarker(ByteBuffer inputBuf) {
+  private void verifySegmentSizeWithSegmentSizeMarker(ByteBuffer inputBuf, boolean isTerminal) {
+    int segmentSize = inputBuf.remaining();
     int segmentSizeMarker = inputBuf.getInt();
-    if (segmentSizeMarker != NON_TERMINAL_SEGMENT_SIZE_MARKER) {
-      throw new IllegalArgumentException(
-          String.format(
-              "segment length marker mismatch, expected: %d, got: %d",
-              NON_TERMINAL_SEGMENT_SIZE_MARKER, segmentSizeMarker));
+    if (!isTerminal && segmentSizeMarker == -1) {
+      return;
     }
-  }
-
-  private byte[] processLastSegment(ByteBuffer inputBuf) throws GeneralSecurityException {
-    verifyLastSegmentLength(inputBuf);
-    verifyLastSegmentSizeMarker(inputBuf);
-    AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
-    AeadIv aeadIv = AeadIv.from(inputBuf, parameterSpec.getAead().getIvLength());
-    AeadAad aeadAad = AeadAad.terminal(segmentCounter);
-    byte[] ciphertext = new byte[inputBuf.remaining()];
-    inputBuf.get(ciphertext);
-    byte[] decrypted =
-        aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, ciphertext);
-    closeInternal();
-    return decrypted;
-  }
-
-  private void verifyLastSegmentLength(ByteBuffer inputBuf) {
-    if (inputBuf.capacity()
-        < 4 + parameterSpec.getAead().getIvLength() + parameterSpec.getAead().getAuthTagLength()) {
-      throw new IllegalArgumentException("last segment is too short");
-    }
-    if (inputBuf.capacity() > parameterSpec.getEncryptedSegmentLength()) {
-      throw new IllegalArgumentException("last segment is too long");
-    }
-  }
-
-  private void verifyLastSegmentSizeMarker(ByteBuffer inputBuf) {
-    int segmentLengthFromSegment = inputBuf.getInt();
-    if (segmentLengthFromSegment != inputBuf.remaining() + 4) {
-      throw new IllegalArgumentException(
-          String.format(
-              "last segment length marker mismatch, expected: %d, got: %d",
-              inputBuf.capacity(), segmentLengthFromSegment));
+    if (segmentSize != segmentSizeMarker) {
+      throw new IllegalArgumentException(String.format("segment length mismatch, expected %d, got %d", segmentSizeMarker, segmentSize));
     }
   }
 
