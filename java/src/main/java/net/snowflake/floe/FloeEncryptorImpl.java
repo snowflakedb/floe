@@ -59,7 +59,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
               "segment length mismatch, expected %d, got %d",
               parameterSpec.getPlainTextSegmentLength(), input.length));
     }
-    if (offset < 0 || offset > input.length || input.length - offset < length) {
+    if (offset < 0 || offset > input.length || input.length - offset < length || length < 0) {
       throw new IllegalArgumentException(
           String.format("invalid offset (%d) and length (%d) for input length (%d)", offset, length, input.length)
       );
@@ -127,7 +127,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
               "last segment is too long, got %d, max is %d",
               input.length, parameterSpec.getPlainTextSegmentLength()));
     }
-    if (offset < 0 || offset > input.length || input.length - offset < length) {
+    if (offset < 0 || offset > input.length || input.length - offset < length || length < 0) {
       throw new IllegalArgumentException(
           String.format("invalid offset (%d) and length (%d) for input length (%d)", offset, length, input.length)
       );
