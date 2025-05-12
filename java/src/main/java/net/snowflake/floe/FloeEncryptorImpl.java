@@ -26,9 +26,14 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   @Override
   public byte[] processSegment(byte[] input) {
+    return processSegment(input, 0, input.length);
+  }
+
+  @Override
+  public byte[] processSegment(byte[] input, int offset, int length) {
     return processInternal(() -> {
       try {
-        verifySegmentLength(input);
+        verifySegmentLength(input, offset, length);
         verifyMaxSegmentNumberNotReached();
         AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
         AeadIv aeadIv =
@@ -37,7 +42,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
         AeadAad aeadAad = AeadAad.nonTerminal(segmentCounter);
         // it works as long as AEAD returns auth tag as a part of the ciphertext
         byte[] ciphertextWithAuthTag =
-            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input);
+            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input, offset, length);
         byte[] encoded = segmentToBytes(aeadIv, ciphertextWithAuthTag);
         segmentCounter++;
         return encoded;
@@ -47,12 +52,17 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
     });
   }
 
-  private void verifySegmentLength(byte[] input) {
-    if (input.length != parameterSpec.getPlainTextSegmentLength()) {
+  private void verifySegmentLength(byte[] input, int offset, int length) {
+    if (length != parameterSpec.getPlainTextSegmentLength()) {
       throw new IllegalArgumentException(
           String.format(
               "segment length mismatch, expected %d, got %d",
               parameterSpec.getPlainTextSegmentLength(), input.length));
+    }
+    if (offset < 0 || offset > input.length || input.length - offset < length || length < 0) {
+      throw new IllegalArgumentException(
+          String.format("invalid offset (%d) and length (%d) for input length (%d)", offset, length, input.length)
+      );
     }
   }
 
@@ -72,16 +82,26 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
 
   @Override
   public byte[] processLastSegment(byte[] input) {
+    return processLastSegment(input, 0, input.length);
+  }
+
+  @Override
+  public byte[] processLastSegment(byte[] input, int offset, final int length) {
+    // just for convenience - streams returns -1 when there is no more data, and we would like to
+    // treat it as a last 0-length segment
+    if (length == -1) {
+      return processLastSegment(input, offset, 0);
+    }
     return processInternal(() -> {
       try {
-        verifyLastSegmentLength(input);
+        verifyLastSegmentLength(input, offset, length);
         AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
         AeadIv aeadIv =
             AeadIv.generateRandom(
                 random, parameterSpec.getAead().getIvLength());
         AeadAad aeadAad = AeadAad.terminal(segmentCounter);
         byte[] ciphertextWithAuthTag =
-            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input);
+            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input, offset, length);
         byte[] lastSegmentBytes = lastSegmentToBytes(aeadIv, ciphertextWithAuthTag);
         closeInternal();
         return lastSegmentBytes;
@@ -100,12 +120,17 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
     return output.array();
   }
 
-  private void verifyLastSegmentLength(byte[] input) {
-    if (input.length > parameterSpec.getPlainTextSegmentLength()) {
+  private void verifyLastSegmentLength(byte[] input, int offset, int length) {
+    if (length > parameterSpec.getPlainTextSegmentLength()) {
       throw new IllegalArgumentException(
           String.format(
               "last segment is too long, got %d, max is %d",
               input.length, parameterSpec.getPlainTextSegmentLength()));
+    }
+    if (offset < 0 || offset > input.length || input.length - offset < length || length < 0) {
+      throw new IllegalArgumentException(
+          String.format("invalid offset (%d) and length (%d) for input length (%d)", offset, length, input.length)
+      );
     }
   }
 

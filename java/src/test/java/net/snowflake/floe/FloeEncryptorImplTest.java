@@ -93,6 +93,47 @@ class FloeEncryptorImplTest {
     }
   }
 
+  @ParameterizedTest
+  @ValueSource(ints = {9, 1024})
+  void shouldThrowExceptionIfPlaintextIsTooLongWhenCallingWithZeroOffset(int segmentSize) throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[segmentSize], 0, segmentSize));
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got " + segmentSize);
+
+      addLastSegment(encryptor);
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {9, 1024})
+  void shouldThrowExceptionIfPlaintextIsTooLongWhenCallingWithNonZeroOffset(int segmentSize) throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[segmentSize], 1, segmentSize));
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+      assertEquals(e.getCause().getMessage(), "segment length mismatch, expected 8, got " + segmentSize);
+
+      addLastSegment(encryptor);
+    }
+  }
+
+  @Test
+  void shouldThrowExceptionIfPlaintextOffsetAndLengthAreLargerThanSegmentSize() throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[8], 1, 8));
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+      assertEquals(e.getCause().getMessage(), "invalid offset (1) and length (8) for input length (8)");
+
+      addLastSegment(encryptor);
+    }
+  }
+
   @Test
   void shouldThrowEncryptionIfLastSegmentPlaintextIsTooLong() throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
@@ -116,6 +157,17 @@ class FloeEncryptorImplTest {
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       assertDoesNotThrow(() -> encryptor.processSegment(new byte[8]));
       assertDoesNotThrow(() -> encryptor.processLastSegment(new byte[lastSegmentSize]));
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 7})
+  void shouldAcceptSegmentWithCorrectSizeWithOffsetAndLength(int lastSegmentSize) throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      assertDoesNotThrow(() -> encryptor.processSegment(new byte[8], 0, 8));
+      assertDoesNotThrow(() -> encryptor.processLastSegment(new byte[lastSegmentSize], 0, lastSegmentSize));
     }
   }
 
@@ -156,6 +208,30 @@ class FloeEncryptorImplTest {
       // correct segment clears the decryptor
       assertArrayEquals(new byte[8], decryptor.processSegment(firstSegmentCiphertext));
       assertArrayEquals(new byte[8], decryptor.processSegment(lastSegmentCiphertext));
+    }
+  }
+
+  @Test
+  void shouldThrowExceptionForNegativeOffset() throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processSegment(new byte[8], -1, 8));
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+      assertEquals(e.getCause().getMessage(), "invalid offset (-1) and length (8) for input length (8)");
+      encryptor.processLastSegment(new byte[0]);
+    }
+  }
+
+  @Test
+  void shouldThrowExceptionForNegativeLength() throws Exception {
+    FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+    Floe floe = Floe.getInstance(parameterSpec);
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+      FloeException e = assertThrows(FloeException.class, () -> encryptor.processLastSegment(new byte[8], 0, -5));
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+      assertEquals(e.getCause().getMessage(), "invalid offset (0) and length (-5) for input length (8)");
+      encryptor.processLastSegment(new byte[0]);
     }
   }
 }

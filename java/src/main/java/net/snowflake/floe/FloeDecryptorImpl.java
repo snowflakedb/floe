@@ -15,9 +15,14 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] ciphertext) {
+  public byte[] processSegment(byte[] input) {
+    return processSegment(input, 0, input.length);
+  }
+
+  @Override
+  public byte[] processSegment(byte[] input, int offset, int length) {
     return processInternal(() -> {
-      ByteBuffer inputBuffer = ByteBuffer.wrap(ciphertext);
+      ByteBuffer inputBuffer = ByteBuffer.wrap(input, offset, length);
       try {
         if (isLastSegment(inputBuffer)) {
           return processLastSegment(inputBuffer);

@@ -15,6 +15,18 @@ public interface FloeEncryptor extends AutoCloseable {
   byte[] processSegment(byte[] plaintext);
 
   /**
+   * Processes given plaintext to ciphertext.
+   * This function is to be used only with non terminal segments.
+   * Plaintext must be of the size specified by {@link FloeParameterSpec#getPlainTextSegmentLength()}.
+   *
+   * @param plaintext plaintext to be encrypted.
+   * @param offset index of the first byte to process.
+   * @param length how many bytes should be processed.
+   * @return ciphertext.
+   */
+  byte[] processSegment(byte[] plaintext, int offset, int length);
+
+  /**
    * Processes given ciphertext to plaintext.
    * This function is to be used only with terminal segments.
    * This function needs to be called exactly once.
@@ -24,6 +36,19 @@ public interface FloeEncryptor extends AutoCloseable {
    * @return ciphertext.
    */
   byte[] processLastSegment(byte[] plaintext);
+
+  /**
+   * Processes given ciphertext to plaintext.
+   * This function is to be used only with terminal segments.
+   * This function needs to be called exactly once.
+   * Segment may be empty or at most {@link FloeParameterSpec#getPlainTextSegmentLength()} long.
+   *
+   * @param plaintext plaintext to be encrypted.
+   * @param offset index of the first byte to process.
+   * @param length how many bytes should be processed.
+   * @return ciphertext.
+   */
+  byte[] processLastSegment(byte[] plaintext, int offset, int length);
 
   /**
    * Returns header for this FLOE instance, that is required for decryption.

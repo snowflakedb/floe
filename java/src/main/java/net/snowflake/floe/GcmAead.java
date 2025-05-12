@@ -29,16 +29,26 @@ class GcmAead implements AeadProvider {
   @Override
   public byte[] encrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext)
       throws GeneralSecurityException {
-    return process(key, iv, aad, plaintext, Cipher.ENCRYPT_MODE);
+    return process(key, iv, aad, plaintext, 0, plaintext.length, Cipher.ENCRYPT_MODE);
+  }
+
+  @Override
+  public byte[] encrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext, int offset, int length) throws GeneralSecurityException {
+    return process(key, iv, aad, plaintext, offset, length, Cipher.ENCRYPT_MODE);
   }
 
   @Override
   public byte[] decrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] ciphertext)
       throws GeneralSecurityException {
-    return process(key, iv, aad, ciphertext, Cipher.DECRYPT_MODE);
+    return process(key, iv, aad, ciphertext, 0, ciphertext.length, Cipher.DECRYPT_MODE);
   }
 
-  private byte[] process(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext, int opmode)
+  @Override
+  public byte[] decrypt(AeadKey key, AeadIv iv, AeadAad aad, byte[] ciphertext, int offset, int length) throws GeneralSecurityException {
+    return process(key, iv, aad, ciphertext, offset, length, Cipher.DECRYPT_MODE);
+  }
+
+  private byte[] process(AeadKey key, AeadIv iv, AeadAad aad, byte[] plaintext, int offset, int length, int opmode)
       throws InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException,
           BadPaddingException {
     GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(tagLengthInBits, iv.getBytes());
@@ -46,6 +56,6 @@ class GcmAead implements AeadProvider {
     if (aad != null) {
       cipher.updateAAD(aad.getBytes());
     }
-    return cipher.doFinal(plaintext);
+    return cipher.doFinal(plaintext, offset, length);
   }
 }
