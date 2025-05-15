@@ -73,8 +73,7 @@ public class FloeParameterSpec {
   }
 
   public int getPlainTextSegmentLength() {
-    // sizeof(int) == 4, file size is a part of the segment ciphertext
-    return encryptedSegmentLength - aead.getIvLength() - aead.getAuthTagLength() - 4;
+    return encryptedSegmentLength - aead.getIvLength() - aead.getAuthTagLength() - Floe.SEGMENT_SIZE_MARKER_LENGTH;
   }
 
   int getKeyRotationMask() {

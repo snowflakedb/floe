@@ -6,7 +6,7 @@ import java.security.GeneralSecurityException;
 // This class is not thread-safe!
 class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   private final AeadProvider aeadProvider;
-  private final int minimalSegmentLength = 4 /* segment size marker */ + parameterSpec.getAead().getIvLength() + parameterSpec.getAead().getAuthTagLength();
+  private final int minimalSegmentLength = Floe.SEGMENT_SIZE_MARKER_LENGTH + parameterSpec.getAead().getIvLength() + parameterSpec.getAead().getAuthTagLength();
 
   private long segmentCounter;
 
@@ -36,7 +36,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
         AeadIv aeadIv = AeadIv.from(inputBuf, parameterSpec.getAead().getIvLength());
         AeadAad aeadAad = isTerminal ? AeadAad.terminal(segmentCounter) : AeadAad.nonTerminal(segmentCounter);
         byte[] decrypted =
-            aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, inputBuf.array(), inputBuf.position(), inputBuf.remaining());
+            aeadProvider.decrypt(aeadKey, aeadIv, aeadAad, inputBuf.array(), inputBuf.position() + inputBuf.arrayOffset(), inputBuf.remaining());
         if (isTerminal) {
           closeInternal();
         }
@@ -68,7 +68,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   private void verifySegmentSizeWithSegmentSizeMarker(ByteBuffer inputBuf, boolean isTerminal) {
     int segmentSize = inputBuf.remaining();
     int segmentSizeMarker = inputBuf.getInt();
-    if (!isTerminal && segmentSizeMarker == -1) {
+    if (!isTerminal && segmentSizeMarker == NON_TERMINAL_SEGMENT_SIZE_MARKER) {
       return;
     }
     if (segmentSize != segmentSizeMarker) {

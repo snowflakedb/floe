@@ -44,6 +44,10 @@ class KatTest {
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
             "reference_java_rotation"
+        ),
+        Arguments.of(
+            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
+            "reference_lastSegAligned"
         )
     );
   }

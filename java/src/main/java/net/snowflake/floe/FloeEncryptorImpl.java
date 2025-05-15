@@ -80,7 +80,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   private byte[] segmentToBytes(boolean isTerminal, AeadIv aeadIv, byte[] ciphertextWithAuthTag) {
-    int ciphertextSegmentLength = 4 + aeadIv.getBytes().length + ciphertextWithAuthTag.length;
+    int ciphertextSegmentLength = Floe.SEGMENT_SIZE_MARKER_LENGTH + aeadIv.getBytes().length + ciphertextWithAuthTag.length;
     int segmentLengthMarker = isTerminal ? ciphertextSegmentLength : NON_TERMINAL_SEGMENT_SIZE_MARKER;
     ByteBuffer output = ByteBuffer.allocate(ciphertextSegmentLength);
     output.putInt(segmentLengthMarker);

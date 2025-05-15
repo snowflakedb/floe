@@ -2,7 +2,7 @@ package net.snowflake.floe;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
@@ -49,11 +49,8 @@ class FloeDecryptorImplTest {
   }
 
   @ParameterizedTest
-  @CsvSource({
-      "8, false", // non terminal segment
-      "7, true" // terminal segment
-  })
-  void shouldThrowExceptionIfSegmentLengthIsMismatched(int plaintextSegmentLength, boolean isTerminal) throws Exception {
+  @ValueSource(ints = {8, 7, 0})
+  void shouldThrowExceptionIfSegmentLengthIsMismatched(int plaintextSegmentLength) throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
@@ -69,7 +66,7 @@ class FloeDecryptorImplTest {
       e = assertThrows(FloeException.class, () -> decryptor.processSegment(extendedCiphertext));
       assertInstanceOf(IllegalArgumentException.class, e.getCause());
       assertEquals("segment length mismatch, expected at most 40, got 1024", e.getCause().getMessage());
-      if (!isTerminal) {
+      if (plaintextSegmentLength == parameterSpec.getPlainTextSegmentLength()) {
         encryptor.processSegment(new byte[0]);
       }
     }
