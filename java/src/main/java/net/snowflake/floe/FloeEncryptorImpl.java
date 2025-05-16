@@ -30,7 +30,10 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input, int offset, int length) {
+  public byte[] processSegment(byte[] input, int offset, final int length) {
+    if (length == -1) {
+      return processSegment(input, offset, 0);
+    }
     return processInternal(() -> {
       try {
         verifySegmentLength(input, offset, length);
@@ -39,12 +42,16 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
         AeadIv aeadIv =
             AeadIv.generateRandom(
                 random, parameterSpec.getAead().getIvLength());
-        AeadAad aeadAad = AeadAad.nonTerminal(segmentCounter);
+        boolean isTerminal = length < parameterSpec.getPlainTextSegmentLength();
+        AeadAad aeadAad = isTerminal ? AeadAad.terminal(segmentCounter) : AeadAad.nonTerminal(segmentCounter);
         // it works as long as AEAD returns auth tag as a part of the ciphertext
         byte[] ciphertextWithAuthTag =
             aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input, offset, length);
-        byte[] encoded = segmentToBytes(aeadIv, ciphertextWithAuthTag);
+        byte[] encoded = segmentToBytes(isTerminal, aeadIv, ciphertextWithAuthTag);
         segmentCounter++;
+        if (isTerminal) {
+          closeInternal();
+        }
         return encoded;
       } catch (Exception e) {
         throw new FloeException(e);
@@ -53,10 +60,10 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   private void verifySegmentLength(byte[] input, int offset, int length) {
-    if (length != parameterSpec.getPlainTextSegmentLength()) {
+    if (length > parameterSpec.getPlainTextSegmentLength()) {
       throw new IllegalArgumentException(
           String.format(
-              "segment length mismatch, expected %d, got %d",
+              "segment length mismatch, expected at most %d, got %d",
               parameterSpec.getPlainTextSegmentLength(), input.length));
     }
     if (offset < 0 || offset > input.length || input.length - offset < length || length < 0) {
@@ -72,66 +79,14 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
     }
   }
 
-  private byte[] segmentToBytes(AeadIv aeadIv, byte[] ciphertextWithAuthTag) {
-    ByteBuffer output = ByteBuffer.allocate(parameterSpec.getEncryptedSegmentLength());
-    output.putInt(NON_TERMINAL_SEGMENT_SIZE_MARKER);
+  private byte[] segmentToBytes(boolean isTerminal, AeadIv aeadIv, byte[] ciphertextWithAuthTag) {
+    int ciphertextSegmentLength = Floe.SEGMENT_SIZE_MARKER_LENGTH + aeadIv.getBytes().length + ciphertextWithAuthTag.length;
+    int segmentLengthMarker = isTerminal ? ciphertextSegmentLength : NON_TERMINAL_SEGMENT_SIZE_MARKER;
+    ByteBuffer output = ByteBuffer.allocate(ciphertextSegmentLength);
+    output.putInt(segmentLengthMarker);
     output.put(aeadIv.getBytes());
     output.put(ciphertextWithAuthTag);
     return output.array();
-  }
-
-  @Override
-  public byte[] processLastSegment(byte[] input) {
-    return processLastSegment(input, 0, input.length);
-  }
-
-  @Override
-  public byte[] processLastSegment(byte[] input, int offset, final int length) {
-    // just for convenience - streams returns -1 when there is no more data, and we would like to
-    // treat it as a last 0-length segment
-    if (length == -1) {
-      return processLastSegment(input, offset, 0);
-    }
-    return processInternal(() -> {
-      try {
-        verifyLastSegmentLength(input, offset, length);
-        AeadKey aeadKey = getKey(messageKey, floeIv, floeAad, segmentCounter);
-        AeadIv aeadIv =
-            AeadIv.generateRandom(
-                random, parameterSpec.getAead().getIvLength());
-        AeadAad aeadAad = AeadAad.terminal(segmentCounter);
-        byte[] ciphertextWithAuthTag =
-            aeadProvider.encrypt(aeadKey, aeadIv, aeadAad, input, offset, length);
-        byte[] lastSegmentBytes = lastSegmentToBytes(aeadIv, ciphertextWithAuthTag);
-        closeInternal();
-        return lastSegmentBytes;
-      } catch (Exception e) {
-        throw new FloeException(e);
-      }
-    });
-  }
-
-  private byte[] lastSegmentToBytes(AeadIv aeadIv, byte[] ciphertextWithAuthTag) {
-    int lastSegmentLength = 4 + aeadIv.getBytes().length + ciphertextWithAuthTag.length;
-    ByteBuffer output = ByteBuffer.allocate(lastSegmentLength);
-    output.putInt(lastSegmentLength);
-    output.put(aeadIv.getBytes());
-    output.put(ciphertextWithAuthTag);
-    return output.array();
-  }
-
-  private void verifyLastSegmentLength(byte[] input, int offset, int length) {
-    if (length > parameterSpec.getPlainTextSegmentLength()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "last segment is too long, got %d, max is %d",
-              input.length, parameterSpec.getPlainTextSegmentLength()));
-    }
-    if (offset < 0 || offset > input.length || input.length - offset < length || length < 0) {
-      throw new IllegalArgumentException(
-          String.format("invalid offset (%d) and length (%d) for input length (%d)", offset, length, input.length)
-      );
-    }
   }
 
   @Override

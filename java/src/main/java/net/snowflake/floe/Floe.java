@@ -11,6 +11,8 @@ public class Floe {
   private final FloeParameterSpec parameterSpec;
   private final KeyDerivator keyDerivator;
 
+  static final int SEGMENT_SIZE_MARKER_LENGTH = 4; // sizeof(int)
+
   private Floe(FloeParameterSpec parameterSpec) {
     this.parameterSpec = parameterSpec;
     this.keyDerivator = new KeyDerivator(parameterSpec);
@@ -54,20 +56,20 @@ public class Floe {
     if (floeHeader.length != expectedHeaderLength) {
       throw new IllegalArgumentException(String.format("invalid header length, expected %d, got %d", encodedParams.length, expectedHeaderLength));
     }
-    ByteBuffer floeHeader1 = ByteBuffer.wrap(floeHeader);
+    ByteBuffer floeHeaderBuf = ByteBuffer.wrap(floeHeader);
 
     byte[] encodedParamsFromHeader = new byte[10];
-    floeHeader1.get(encodedParamsFromHeader, 0, encodedParamsFromHeader.length);
+    floeHeaderBuf.get(encodedParamsFromHeader, 0, encodedParamsFromHeader.length);
     if (!MessageDigest.isEqual(encodedParams, encodedParamsFromHeader)) {
       throw new IllegalArgumentException("invalid parameters header");
     }
 
     byte[] floeIvBytes = new byte[parameterSpec.getFloeIvLength()];
-    floeHeader1.get(floeIvBytes);
+    floeHeaderBuf.get(floeIvBytes);
     FloeIv floeIv = new FloeIv(floeIvBytes);
 
     byte[] headerTagFromHeader = new byte[headerTagLength];
-    floeHeader1.get(headerTagFromHeader);
+    floeHeaderBuf.get(headerTagFromHeader);
 
     byte[] headerTag = keyDerivator.hkdfExpandHeaderTag(floeKey, floeIv, floeAad);
     if (!MessageDigest.isEqual(headerTag, headerTagFromHeader)) {

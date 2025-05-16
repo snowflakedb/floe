@@ -64,12 +64,7 @@ class FloeE2ETest {
       byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
       do {
         int readBytes = plaintextInputStream.read(plaintextSegment);
-        byte[] ciphertext;
-        if (readBytes != parameterSpec.getPlainTextSegmentLength()) {
-          ciphertext = encryptor.processLastSegment(plaintextSegment, 0, readBytes);
-        } else {
-          ciphertext = encryptor.processSegment(plaintextSegment, 0, readBytes);
-        }
+        byte[] ciphertext = encryptor.processSegment(plaintextSegment, 0, readBytes);
         baos.write(ciphertext, 0, ciphertext.length);
       } while(!encryptor.isClosed());
     }
