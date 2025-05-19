@@ -44,6 +44,14 @@ class KatTest {
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
             "reference_java_rotation"
+        ),
+        Arguments.of(
+            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
+            "reference_java_lastSegAligned"
+        ),
+        Arguments.of(
+            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
+            "reference_java_lastSegEmpty"
         )
     );
   }
@@ -78,6 +86,10 @@ class KatTest {
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
             "public_java_rotation"
+        ),
+        Arguments.of(
+            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
+            "public_java_lastSegEmpty"
         )
     );
   }
@@ -93,14 +105,11 @@ class KatTest {
     ciphertextBuffer.get(header);
 
     try (FloeDecryptor decryptor = floe.createDecryptor(referenceKey, referenceAad, header)) {
-      byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
       ByteArrayOutputStream plaintextStream = new ByteArrayOutputStream();
       while (ciphertextBuffer.hasRemaining()) {
-        if (ciphertextBuffer.remaining() < ciphertextSegment.length) {
-          ciphertextSegment = new byte[ciphertextBuffer.remaining()];
-        }
-        ciphertextBuffer.get(ciphertextSegment);
-        byte[] plaintextSegment = decryptor.processSegment(ciphertextSegment);
+        int segLength = Math.min(parameterSpec.getEncryptedSegmentLength(), ciphertextBuffer.remaining());
+        byte[] plaintextSegment = decryptor.processSegment(ciphertextBuffer.array(), ciphertextBuffer.position(), segLength);
+        ciphertextBuffer.position(ciphertextBuffer.position() + segLength);
         plaintextStream.write(plaintextSegment);
       }
       byte[] plaintext = plaintextStream.toByteArray();
@@ -120,17 +129,13 @@ class KatTest {
       try (FileOutputStream ciphertextStream = new FileOutputStream(ciphertextFile)) {
         ciphertextStream.write(byteArrayToHex(encryptor.getHeader()).getBytes(StandardCharsets.UTF_8));
         while(plaintextBuffer.hasRemaining()) {
-          if (plaintextBuffer.remaining() < parameterSpec.getPlainTextSegmentLength()) {
-            byte[] plaintextSegment = new byte[plaintextBuffer.remaining()];
-            plaintextBuffer.get(plaintextSegment);
-            byte[] ciphertextSegment = encryptor.processLastSegment(plaintextSegment);
-            ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
-          } else {
-            byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
-            plaintextBuffer.get(plaintextSegment);
-            byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment);
-            ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
-          }
+          byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
+          plaintextBuffer.get(plaintextSegment);
+          byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment);
+          ciphertextStream.write(byteArrayToHex(ciphertextSegment).getBytes(StandardCharsets.UTF_8));
+        }
+        if (!encryptor.isClosed()) {
+          ciphertextStream.write(byteArrayToHex(encryptor.processSegment(new byte[0])).getBytes(StandardCharsets.UTF_8));
         }
       }
     }
