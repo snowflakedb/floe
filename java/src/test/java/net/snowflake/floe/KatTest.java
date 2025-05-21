@@ -1,5 +1,6 @@
 package net.snowflake.floe;
 
+import net.snowflake.floe.stream.FloeDecryptingInputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Disabled;
@@ -9,6 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
@@ -18,13 +20,19 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class KatTest {
-  private final SecretKey referenceKey = new SecretKeySpec(new byte[32], "AES");
-  private final byte[] referenceAad = "This is AAD".getBytes(StandardCharsets.UTF_8);
+  private final SecretKey secretKey = new SecretKeySpec(new byte[32], "AES");
+  private final byte[] aad = "This is AAD".getBytes(StandardCharsets.UTF_8);
 
   @ParameterizedTest
   @MethodSource("referenceParameters")
   void compareWithReferenceData(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
     run(parameterSpec, fileNamePrefix);
+  }
+
+  @ParameterizedTest
+  @MethodSource("referenceParameters")
+  void compareWithReferenceDataUsingStream(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
+    runWithStream(parameterSpec, fileNamePrefix);
   }
 
   private static Stream<Arguments> referenceParameters() {
@@ -60,6 +68,12 @@ class KatTest {
   @MethodSource("customParameters")
   void compareWithCustomData(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
     run(parameterSpec, fileNamePrefix);
+  }
+
+  @ParameterizedTest
+  @MethodSource("customParameters")
+  void compareWithCustomDataUsingStreams(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
+    runWithStream(parameterSpec, fileNamePrefix);
   }
 
   @ParameterizedTest
@@ -100,7 +114,7 @@ class KatTest {
     byte[] header = new byte[parameterSpec.getHeaderSize()];
     ciphertextBuffer.get(header);
 
-    try (FloeDecryptor decryptor = floe.createDecryptor(referenceKey, referenceAad, header)) {
+    try (FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, header)) {
       ByteArrayOutputStream plaintextStream = new ByteArrayOutputStream();
       while (ciphertextBuffer.hasRemaining()) {
         int segLength = Math.min(parameterSpec.getEncryptedSegmentLength(), ciphertextBuffer.remaining());
@@ -113,6 +127,15 @@ class KatTest {
     }
   }
 
+  private void runWithStream(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
+    byte[] ciphertextBytes = readFile(fileNamePrefix + "_ct.txt");
+    FloeDecryptingInputStream decryptingInputStream = new FloeDecryptingInputStream(new ByteArrayInputStream(ciphertextBytes), parameterSpec, secretKey, aad);
+    ByteArrayOutputStream decryptedOutputStream = new ByteArrayOutputStream();
+    IOUtils.copy(decryptingInputStream, decryptedOutputStream);
+    byte[] expectedBytes = readFile(fileNamePrefix + "_pt.txt");
+    assertArrayEquals(expectedBytes, decryptedOutputStream.toByteArray());
+  }
+
   private void createKatFromPlaintext(FloeParameterSpec parameterSpec, String fileNamePrefix) throws Exception {
     byte[] plaintext = readFile(fileNamePrefix + "_pt.txt");
     String ciphertextFile = fileNamePrefix + "_ct.txt";
@@ -121,7 +144,7 @@ class KatTest {
 
     ByteBuffer plaintextBuffer = ByteBuffer.wrap(plaintext);
 
-    try (FloeEncryptor encryptor = floe.createEncryptor(referenceKey, referenceAad)) {
+    try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       try (FileOutputStream ciphertextStream = new FileOutputStream(ciphertextFile)) {
         ciphertextStream.write(byteArrayToHex(encryptor.getHeader()).getBytes(StandardCharsets.UTF_8));
         while(plaintextBuffer.hasRemaining()) {
