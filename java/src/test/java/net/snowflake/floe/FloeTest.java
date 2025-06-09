@@ -77,6 +77,28 @@ class FloeTest {
   }
 
   @Nested
+  class ValidInputTests {
+    @Test
+    public void keyLengthIsChecked() throws Exception {
+      final SecretKey longKey = new SecretKeySpec(new byte[33], "FLOE");
+      final SecretKey validKey = new SecretKeySpec(new byte[32], "FLOE");
+      final FloeParameterSpec parameterSpec =
+          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4096, 32);
+      final Floe floe = Floe.getInstance(parameterSpec);
+      IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> floe.createEncryptor(longKey, aad));
+      assertEquals("invalid key length", e.getMessage());
+
+      try (FloeEncryptor encryptor = floe.createEncryptor(validKey, aad)) {
+        // Check the decryption flow
+        e = assertThrows(IllegalArgumentException.class, () -> floe.createDecryptor(longKey, aad, encryptor.getHeader()));
+        assertEquals("invalid key length", e.getMessage());
+        // Finish encryption to avoid error
+        encryptor.processSegment(new byte[0]);
+      }
+    }
+  }
+
+  @Nested
   class SegmentTests {
 
     @Test
