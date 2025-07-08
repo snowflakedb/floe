@@ -1,6 +1,7 @@
 package net.snowflake.floe;
 
 import java.io.Closeable;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 abstract class BaseSegmentProcessor implements Closeable {
@@ -20,6 +21,21 @@ abstract class BaseSegmentProcessor implements Closeable {
   private boolean completedExceptionally;
 
   BaseSegmentProcessor(FloeParameterSpec parameterSpec, FloeIv floeIv, FloeKey floeKey, FloeAad floeAad) {
+    // Check the key length if we can
+    if (floeKey.getKey().getFormat().equalsIgnoreCase("RAW")) {
+      byte[] rawKey = null;
+      try {
+        rawKey = floeKey.getKey().getEncoded();
+        // We don't care about contents, only the length
+        Arrays.fill(rawKey, (byte) 0);
+      } catch (final Exception e) {
+        // If we cannot access the key then we must trust it is correct
+        rawKey = null;
+      }
+      if (rawKey != null && rawKey.length != parameterSpec.getAead().getKeyLength()) {
+        throw new IllegalArgumentException("invalid key length");
+      }
+    }
     this.parameterSpec = parameterSpec;
     this.floeIv = floeIv;
     this.floeAad = floeAad;

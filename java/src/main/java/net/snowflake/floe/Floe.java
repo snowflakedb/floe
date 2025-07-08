@@ -43,6 +43,8 @@ public class Floe {
         throw new IllegalArgumentException("Header is too long");
       }
       return new FloeEncryptorImpl(parameterSpec, floeKey, floeIv, floeAad, header.array(), random);
+    } catch (final RuntimeException ex) {
+      throw ex;
     } catch (Exception e) {
       throw new FloeException(e);
     }
