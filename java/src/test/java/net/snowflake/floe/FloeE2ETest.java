@@ -23,9 +23,6 @@ class FloeE2ETest {
   private static final SecretKey secretKey = new SecretKeySpec(new byte[32], "AES");
   private static final byte[] aad = new byte[32];
 
-  private static final FloeParameterSpec parameterSpec4kB = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32);
-  private static final FloeParameterSpec parameterSpec1MB = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32);
-
   @ParameterizedTest
   @ValueSource(ints = {
       200, // multiple of plaintext segment size
@@ -38,12 +35,12 @@ class FloeE2ETest {
 
   @Test
   void runFor4kB() throws Exception {
-    runForVariousPlaintextSizes(parameterSpec4kB);
+    runForVariousPlaintextSizes(FloeParameterSpec.GCM256_SHA384_4K);
   }
 
   @Test
   void runFor1MB() throws Exception {
-    runForVariousPlaintextSizes(parameterSpec1MB);
+    runForVariousPlaintextSizes(FloeParameterSpec.GCM256_SHA384_1M);
   }
 
   private void runForVariousPlaintextSizes(FloeParameterSpec parameterSpec) throws Exception {
@@ -123,11 +120,7 @@ class FloeE2ETest {
           plaintextSegment.put(plaintextSegmentPart, 0, readBytes);
         } while (plaintextSegment.hasRemaining());
         byte[] ciphertextSegment;
-        if (plaintextSegment.position() == 0) {
-          ciphertextSegment = encryptor.processSegment(new byte[0]); // terminal segment
-        } else {
-          ciphertextSegment = encryptor.processSegment(plaintextSegment.array(), 0, plaintextSegment.position());
-        }
+        ciphertextSegment = encryptor.processSegment(plaintextSegment.array(), 0, plaintextSegment.position());
         baos.write(ciphertextSegment, 0, ciphertextSegment.length);
         plaintextSegment.clear();
       } while(!encryptor.isClosed());
@@ -169,11 +162,11 @@ class FloeE2ETest {
 
   private static Stream<Arguments> slowStreamParams() {
     return Stream.of(
-        Arguments.of(50, parameterSpec4kB),
-        Arguments.of(parameterSpec4kB.getPlainTextSegmentLength(), parameterSpec4kB),
-        Arguments.of(parameterSpec4kB.getPlainTextSegmentLength() + 5, parameterSpec4kB),
-        Arguments.of(parameterSpec4kB.getPlainTextSegmentLength() * 2, parameterSpec4kB),
-        Arguments.of(parameterSpec4kB.getPlainTextSegmentLength() * 2 + 1, parameterSpec4kB)
+        Arguments.of(50, FloeParameterSpec.GCM256_SHA384_4K),
+        Arguments.of(FloeParameterSpec.GCM256_SHA384_4K.getPlainTextSegmentLength(), FloeParameterSpec.GCM256_SHA384_1M),
+        Arguments.of(FloeParameterSpec.GCM256_SHA384_4K.getPlainTextSegmentLength() + 5, FloeParameterSpec.GCM256_SHA384_4K),
+        Arguments.of(FloeParameterSpec.GCM256_SHA384_4K.getPlainTextSegmentLength() * 2, FloeParameterSpec.GCM256_SHA384_4K),
+        Arguments.of(FloeParameterSpec.GCM256_SHA384_4K.getPlainTextSegmentLength() * 2 + 1, FloeParameterSpec.GCM256_SHA384_4K)
     );
   }
 

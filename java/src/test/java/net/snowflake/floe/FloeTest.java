@@ -22,7 +22,7 @@ class FloeTest {
     @Test
     void validateHeaderMatchesForEncryptionAndDecryption() throws Exception {
       FloeParameterSpec parameterSpec =
-          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 4);
+          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 32);
       Floe floe = Floe.getInstance(parameterSpec);
 
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
@@ -34,7 +34,7 @@ class FloeTest {
     @Test
     void validateHeaderDoesNotMatchInParams() throws Exception {
       FloeParameterSpec parameterSpec =
-          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 4);
+          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 32);
       Floe floe = Floe.getInstance(parameterSpec);
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
         byte[] header = encryptor.getHeader();
@@ -50,7 +50,7 @@ class FloeTest {
     @Test
     void validateHeaderDoesNotMatchInIV() throws Exception {
       FloeParameterSpec parameterSpec =
-          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 4);
+          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024, 32);
       Floe floe = Floe.getInstance(parameterSpec);
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
         byte[] header = encryptor.getHeader();
@@ -64,7 +64,7 @@ class FloeTest {
     @Test
     void validateHeaderDoesNotMatchInHeaderTag() throws Exception {
       FloeParameterSpec parameterSpec =
-          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4096, 4);
+          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4096, 32);
       Floe floe = Floe.getInstance(parameterSpec);
       try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
         byte[] header = encryptor.getHeader();

@@ -28,7 +28,7 @@ class FloeEncryptorImplTest {
             Aead.AES_GCM_256,
             Hash.SHA384,
             12345678,
-            4,
+            32,
             4,
             1L << 40);
     Floe floe = Floe.getInstance(parameterSpec);
@@ -45,11 +45,11 @@ class FloeEncryptorImplTest {
       assertEquals((byte) 97, header[4]);
       assertEquals((byte) 78, header[5]);
       // FLOE IV length in BE
-      // 4(10) = 4(16) = 00,00,00,04
+      // 32(10) = 00,00,00,32
       assertEquals(0, header[6]);
       assertEquals(0, header[7]);
       assertEquals(0, header[8]);
-      assertEquals(4, header[9]);
+      assertEquals(32, header[9]);
       // FLOE IV
       assertEquals(0, header[10]);
       assertEquals(0, header[11]);
