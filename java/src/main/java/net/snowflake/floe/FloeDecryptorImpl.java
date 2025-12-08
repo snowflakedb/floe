@@ -21,10 +21,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input, int offset, final int length) {
-    if (length == -1) {
-      return processSegment(input, offset, 0);
-    }
+  public byte[] processSegment(byte[] input, int offset, int length) {
     return processInternal(() -> {
       ByteBuffer inputBuf = ByteBuffer.wrap(input, offset, length);
       try {
