@@ -30,10 +30,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
   }
 
   @Override
-  public byte[] processSegment(byte[] input, int offset, final int length) {
-    if (length == -1) {
-      return processSegment(input, offset, 0);
-    }
+  public byte[] processSegment(byte[] input, int offset, int length) {
     return processInternal(() -> {
       try {
         verifySegmentLength(input, offset, length);
