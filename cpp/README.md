@@ -22,17 +22,11 @@ sudo apt-get install cmake g++ libssl-dev lcov
 
 ## Building
 
+Tests building is enabled by default. To disable them, add `-DBUILD_TESTING=OFF` to cmake command.
+
 ### Release Build
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Release -B cmake-build-release && \
-cmake --build cmake-build-release
-```
-
-Tests are disabled by default for Release builds. To enable them, add `-DBUILD_TESTING=ON`.
-
-### Release Build (with tests)
-```bash
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -B cmake-build-release && \
 cmake --build cmake-build-release
 ```
 

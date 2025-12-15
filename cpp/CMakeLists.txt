@@ -6,12 +6,7 @@ include(cmake/platform.cmake)
 
 set(CMAKE_CXX_STANDARD 20)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    option(BUILD_TESTING "Build tests" OFF)
-else()
-    option(BUILD_TESTING "Build tests" ON)
-endif()
-
+option(BUILD_TESTING "Build tests" ON)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 
 if(ENABLE_COVERAGE)
