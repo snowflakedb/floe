@@ -28,14 +28,14 @@ Test building is enabled by default. To disable tests, add `-DBUILD_TESTING=OFF`
 
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Release -B cmake-build-release && \
-cmake --build cmake-build-release
+cmake --build cmake-build-release -j
 ```
 
 ### Debug Build
 
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug -B cmake-build-debug && \
-cmake --build cmake-build-debug
+cmake --build cmake-build-debug -j
 ```
 
 ## Testing
@@ -46,8 +46,8 @@ To build and run the tests:
 
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug -B cmake-build-debug && \
-cmake --build cmake-build-debug && \
-ctest --test-dir cmake-build-debug --output-on-failure
+cmake --build cmake-build-debug -j && \
+ctest --test-dir cmake-build-debug --output-on-failure -j
 ```
 
 ### Code Coverage
@@ -56,7 +56,7 @@ To generate a code coverage report, add `-DENABLE_COVERAGE=ON` to the CMake comm
 
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -B cmake-build-coverage && \
-cmake --build cmake-build-coverage --target coverage
+cmake --build cmake-build-coverage --target coverage -j
 ```
 
 The coverage report will be generated at `cmake-build-coverage/coverage_html/index.html`.
