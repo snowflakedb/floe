@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 project(floe
-        VERSION 0.1
+        VERSION 0.0.1
         LANGUAGES CXX)
 include(cmake/platform.cmake)
 
@@ -13,12 +13,23 @@ if(ENABLE_COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
 endif()
 
-set (SOURCE_FILES
-        src/floe.cpp
-        src/floe.hpp
+file(GLOB SOURCE_FILES
+        "src/*.cpp"
 )
 
-add_library(floe STATIC ${SOURCE_FILES})
+file(GLOB PUBLIC_HEADERS
+        "include/floe/*.hpp"
+)
+
+add_library(floe STATIC ${SOURCE_FILES} ${PUBLIC_HEADERS})
+
+target_include_directories(floe
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(floe PRIVATE OpenSSL::Crypto)
