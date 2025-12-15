@@ -28,3 +28,38 @@ jobs:
         working-directory: ./java
         shell: bash
         run: ./mvnw package
+
+  test-cpp:
+    name: "Test cpp"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/apt/archives
+            /var/lib/apt/lists
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/main.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+      - name: Install dependencies
+        run: |
+          set -x
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '4.2.x'
+      - name: Build
+        working-directory: ./cpp
+        shell: bash
+        run: |
+          cmake --build cmake-build -- -j $(nproc)
+      - name: Tests
+        working-directory: ./cpp
+        shell: bash
+        run: |
+          ctest -j $(nproc) -C Debug --test-dir cmake-build --output-on-failure
