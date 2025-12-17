@@ -20,14 +20,14 @@ sudo apt-get update
 sudo apt-get install cmake g++ libssl-dev lcov
 ```
 
-## Building
+## Building the Library
 
 Test building is enabled by default. To disable tests, add `-DBUILD_TESTING=OFF` to the CMake command.
 
 ### Release Build
 
 ```bash
-cmake -DCMAKE_BUILD_TYPE=Release -B cmake-build-release && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -B cmake-build-release
 cmake --build cmake-build-release -j
 ```
 
@@ -36,6 +36,18 @@ cmake --build cmake-build-release -j
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug -B cmake-build-debug && \
 cmake --build cmake-build-debug -j
+```
+
+## Library Structure
+
+The library provides a public include directory that should be distributed with the built library:
+
+```
+├── include/
+│   └── floe/           # Public API headers
+├── src/                # Implementation
+└── cmake-build-release/
+    └── libfloe.a       # Built static library
 ```
 
 ## Testing
