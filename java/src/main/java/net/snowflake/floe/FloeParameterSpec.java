@@ -7,6 +7,9 @@ import java.util.Optional;
 import static net.snowflake.floe.BaseSegmentProcessor.headerTagLength;
 
 public class FloeParameterSpec {
+  public static final FloeParameterSpec GCM256_SHA384_4K = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32);
+  public static final FloeParameterSpec GCM256_SHA384_1M = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32);
+
   private final Aead aead;
   private final Hash hash;
   private final int encryptedSegmentLength;
@@ -41,8 +44,8 @@ public class FloeParameterSpec {
     if (encryptedSegmentLength <= 0) {
       throw new IllegalArgumentException("encryptedSegmentLength must be > 0");
     }
-    if (floeIvLength <= 0) {
-      throw new IllegalArgumentException("floeIvLength must be > 0");
+    if (floeIvLength != 32) {
+      throw new IllegalArgumentException("Currently, floeIvLength must be equal to 32");
     }
     this.encodedParams = paramEncode();
   }
