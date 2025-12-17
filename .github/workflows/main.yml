@@ -48,18 +48,25 @@ jobs:
         run: |
           set -xe
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '4.2.x'
+          sudo apt-get install -y build-essential libssl-dev lcov
+          wget https://github.com/Kitware/CMake/releases/download/v4.2.1/cmake-4.2.1-linux-x86_64.sh
+          sudo sh cmake-4.2.1-linux-x86_64.sh --skip-license --prefix=/usr/local
+          sudo rm cmake-4.2.1-linux-x86_64.sh
+          cmake --version
       - name: Build
         working-directory: ./cpp
         shell: bash
         run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -B cmake-build
           cmake --build cmake-build -- -j $(nproc)
-      - name: Tests
+      - name: Run tests and generate coverage
         working-directory: ./cpp
         shell: bash
         run: |
-          ctest -j $(nproc) -C Debug --test-dir cmake-build --output-on-failure
+          cmake --build cmake-build --target coverage -- -j $(nproc)
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./cpp/cmake-build/coverage_filtered.info
+          name: cpp-coverage
+          fail_ci_if_error: true
