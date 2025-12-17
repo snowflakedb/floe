@@ -49,10 +49,10 @@ jobs:
           set -xe
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev lcov
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '4.2.x'
+          wget https://github.com/Kitware/CMake/releases/download/v4.2.1/cmake-4.2.1-linux-x86_64.sh
+          sudo sh cmake-4.2.1-linux-x86_64.sh --skip-license --prefix=/usr/local
+          sudo rm cmake-4.2.1-linux-x86_64.sh
+          cmake --version
       - name: Build
         working-directory: ./cpp
         shell: bash
@@ -68,6 +68,5 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: ./cpp/cmake-build/coverage_filtered.info
-          flags: cpp
           name: cpp-coverage
           fail_ci_if_error: true
