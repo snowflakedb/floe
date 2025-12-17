@@ -65,7 +65,9 @@ jobs:
         run: |
           cmake --build cmake-build --target coverage -- -j $(nproc)
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ./cpp/cmake-build/coverage_filtered.info
           name: cpp-coverage
