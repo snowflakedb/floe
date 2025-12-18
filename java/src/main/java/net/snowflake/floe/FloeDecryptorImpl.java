@@ -40,7 +40,7 @@ class FloeDecryptorImpl extends BaseSegmentProcessor implements FloeDecryptor {
         segmentCounter++;
         return decrypted;
       } catch (GeneralSecurityException e) {
-        throw new FloeException(e);
+        throw new FloeException("error while decrypting segment", e);
       }
     });
   }

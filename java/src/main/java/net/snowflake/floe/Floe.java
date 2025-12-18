@@ -46,7 +46,7 @@ public class Floe {
     } catch (final RuntimeException ex) {
       throw ex;
     } catch (Exception e) {
-      throw new FloeException(e);
+      throw new FloeException("error while creating encryptor", e);
     }
   }
 

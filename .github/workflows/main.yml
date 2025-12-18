@@ -28,6 +28,14 @@ jobs:
         working-directory: ./java
         shell: bash
         run: ./mvnw package
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./java/target/site/jacoco/jacoco.xml
+          name: java-coverage
+          fail_ci_if_error: true
 
   test-cpp:
     name: "Test cpp"

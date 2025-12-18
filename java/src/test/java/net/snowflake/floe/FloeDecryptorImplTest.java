@@ -21,6 +21,13 @@ class FloeDecryptorImplTest {
   private final SecretKey secretKey = new SecretKeySpec(new byte[32], "AES");
   private final byte[] aad = "Test AAD".getBytes(StandardCharsets.UTF_8);
 
+  @ParameterizedTest
+  @ValueSource(ints = {0, 7, 800})
+  void shouldThrowExceptionWhenHeaderHasIncorrectLength(int headerSize) {
+    Floe floe = Floe.getInstance(FloeParameterSpec.GCM256_SHA384_4K);
+    assertThrows(IllegalArgumentException.class, () -> floe.createDecryptor(secretKey, aad, new byte[headerSize]));
+  }
+
   @Test
   void shouldDecryptCiphertext() throws Exception {
     FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
