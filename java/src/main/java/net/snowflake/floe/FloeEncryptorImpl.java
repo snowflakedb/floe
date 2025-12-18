@@ -51,7 +51,7 @@ class FloeEncryptorImpl extends BaseSegmentProcessor implements FloeEncryptor {
         }
         return encoded;
       } catch (Exception e) {
-        throw new FloeException(e);
+        throw new FloeException("error while encrypting segment", e);
       }
     });
   }

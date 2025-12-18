@@ -3,11 +3,10 @@ package net.snowflake.floe;
 import java.util.function.Supplier;
 
 public enum Aead {
-  AES_GCM_256((byte) 0, "AES", "AES/GCM/NoPadding", 32, 12, 16, 20, 1L << 40, () -> new GcmAead(16));
+  AES_GCM_256((byte) 0, "AES", 32, 12, 16, 20, 1L << 40, () -> new GcmAead(16));
 
   private final byte id;
   private final String jceKeyTypeName;
-  private final String jceFullName;
   private final int keyLength;
   private final int ivLength;
   private final int authTagLength;
@@ -18,7 +17,6 @@ public enum Aead {
   Aead(
       byte id,
       String jceKeyTypeName,
-      String jceFullName,
       int keyLength,
       int ivLength,
       int authTagLength,
@@ -26,7 +24,6 @@ public enum Aead {
       long maxSegmentNumber,
       Supplier<AeadProvider> aeadProvider) {
     this.jceKeyTypeName = jceKeyTypeName;
-    this.jceFullName = jceFullName;
     this.keyLength = keyLength;
     this.id = id;
     this.ivLength = ivLength;
@@ -42,10 +39,6 @@ public enum Aead {
 
   public String getJceKeyTypeName() {
     return jceKeyTypeName;
-  }
-
-  String getJceFullName() {
-    return jceFullName;
   }
 
   int getKeyLength() {

@@ -7,7 +7,7 @@ Currently, it supports AES-GCM-256 only.
 
 - `AEAD_ID` - Identifier of the AEAD algorithm to use. Currently, only `AES_GCM_256` is supported.
 - `HASH_ID` - Identifier of the hash algorithm to use for encoding parameters. Currently, only `SHA384` is supported.
-- `ENCRYPTED_SEGMENT_LENGTH` - Length of a ciphertext segment in bytes. The last segment can be shorter.
+- `ENCRYPTED_SEGMENT_LENGTH` - Length of a ciphertext segment in bytes. The last segment can be shorter or even empty.
 - `FLOE_IV_LENGTH` - Length of the IV used by FLOE. Currently, this value must be 32 bytes.
 
 ### Relationship between encrypted and plaintext segment lengths
