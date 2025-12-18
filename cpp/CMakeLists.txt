@@ -48,6 +48,7 @@ if(ENABLE_COVERAGE)
             COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
             COMMAND ${LCOV_PATH} --capture --directory ${CMAKE_BINARY_DIR}/CMakeFiles/floe.dir --output-file coverage.info
             COMMAND ${LCOV_PATH} --extract coverage.info '*/src/*' --output-file coverage_filtered.info
+            COMMAND ${LCOV_PATH} --remove coverage_filtered.info '*/tests/*' '*/test/*' '*Test.cpp' '*Tests.cpp' --output-file coverage_filtered.info
             COMMAND ${GENHTML_PATH} coverage_filtered.info --output-directory coverage_html
             COMMAND ${CMAKE_COMMAND} -E echo "Coverage report generated at: ${CMAKE_BINARY_DIR}/coverage_html/index.html"
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
