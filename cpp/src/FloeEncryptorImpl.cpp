@@ -32,14 +32,14 @@ std::vector<uint8_t> FloeEncryptorImpl::getHeader() const {
 }
 
 std::vector<uint8_t> FloeEncryptorImpl::processSegment(const std::vector<uint8_t>& plaintext) {
-    return processSegment(plaintext.data(), 0, plaintext.size());
+    return processSegment(plaintext.data(), 0, plaintext.size(), plaintext.size());
 }
 
 std::vector<uint8_t> FloeEncryptorImpl::processSegment(
-    const uint8_t* plaintext, const size_t offset, const size_t length) {
+    const uint8_t* plaintext, const size_t offset, const size_t length, const size_t totalLength) {
     
     return processInternal([&] {
-        verifySegmentLength(plaintext, length);
+        verifySegmentLength(plaintext, offset, length, totalLength);
         verifyMaxSegmentNumberNotReached();
 
         const auto aeadKey = getKey(*messageKey_, *floeIv_, *floeAad_, segmentCounter_);
@@ -49,7 +49,7 @@ std::vector<uint8_t> FloeEncryptorImpl::processSegment(
         const AeadAad aeadAad = isTerminal ? AeadAad::terminal(segmentCounter_) : AeadAad::nonTerminal(segmentCounter_);
 
         const std::vector<uint8_t> ciphertextWithAuthTag = aeadProvider_->encrypt(
-            *aeadKey, aeadIv, aeadAad, plaintext + offset, length);
+            *aeadKey, aeadIv, aeadAad, plaintext ? plaintext + offset : nullptr, length);
         
         std::vector<uint8_t> encoded = segmentToBytes(isTerminal, aeadIv, ciphertextWithAuthTag);
         
@@ -63,11 +63,20 @@ std::vector<uint8_t> FloeEncryptorImpl::processSegment(
     });
 }
 
-void FloeEncryptorImpl::verifySegmentLength(const uint8_t* input, const size_t length) const {
+void FloeEncryptorImpl::verifySegmentLength(
+    const uint8_t* input,
+    const size_t offset,
+    const size_t length,
+    const size_t totalLength) const {
+    
     if (length > static_cast<size_t>(parameterSpec_.getPlainTextSegmentLength())) {
         throw FloeException("segment length mismatch, expected at most " + 
                           std::to_string(parameterSpec_.getPlainTextSegmentLength()) + 
                           ", got " + std::to_string(length));
+    }
+    
+    if (offset > totalLength || totalLength - offset < length) {
+        throw FloeException("invalid offset/length for provided input");
     }
     
     if (length > 0 && input == nullptr) {

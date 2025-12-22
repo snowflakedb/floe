@@ -25,7 +25,7 @@ public:
     
     ~FloeEncryptorImpl() override;
     
-    std::vector<uint8_t> processSegment(const uint8_t* plaintext, size_t offset, size_t length) override;
+    std::vector<uint8_t> processSegment(const uint8_t* plaintext, size_t offset, size_t length, size_t totalLength) override;
     
     std::vector<uint8_t> processSegment(const std::vector<uint8_t>& plaintext) override;
     
@@ -36,7 +36,7 @@ public:
     void close() override;
 
 private:
-    void verifySegmentLength(const uint8_t* input, size_t length) const;
+    void verifySegmentLength(const uint8_t* input, size_t offset, size_t length, size_t totalLength) const;
     void verifyMaxSegmentNumberNotReached() const;
 
     static std::vector<uint8_t> segmentToBytes(bool isTerminal, const AeadIv& aeadIv, 

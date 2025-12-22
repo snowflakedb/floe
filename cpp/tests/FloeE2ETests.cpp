@@ -42,7 +42,7 @@ TEST_CASE("E2E encryption and decryption with various plaintext sizes", "[e2e]")
             
             while (offset < plaintext.size()) {
                 size_t chunkSize = std::min(segmentSize, plaintext.size() - offset);
-                auto encrypted = encryptor->processSegment(plaintext.data(), offset, chunkSize);
+                auto encrypted = encryptor->processSegment(plaintext.data(), offset, chunkSize, plaintext.size());
                 ciphertext.insert(ciphertext.end(), encrypted.begin(), encrypted.end());
                 offset += chunkSize;
             }
@@ -65,7 +65,7 @@ TEST_CASE("E2E encryption and decryption with various plaintext sizes", "[e2e]")
             
             while (offset < ciphertext.size()) {
                 size_t chunkSize = std::min(encSegmentSize, ciphertext.size() - offset);
-                auto segment = decryptor->processSegment(ciphertext.data(), offset, chunkSize);
+                auto segment = decryptor->processSegment(ciphertext.data(), offset, chunkSize, ciphertext.size());
                 decrypted.insert(decrypted.end(), segment.begin(), segment.end());
                 offset += chunkSize;
             }
@@ -106,13 +106,13 @@ TEST_CASE("E2E with 1MB segments", "[e2e]") {
         
         while (offset < plaintext.size()) {
             size_t chunkSize = std::min(segmentSize, plaintext.size() - offset);
-            auto encrypted = encryptor->processSegment(plaintext.data(), offset, chunkSize);
+            auto encrypted = encryptor->processSegment(plaintext.data(), offset, chunkSize, plaintext.size());
             ciphertext.insert(ciphertext.end(), encrypted.begin(), encrypted.end());
             offset += chunkSize;
         }
         
         if (!encryptor->isClosed()) {
-            auto lastSegment = encryptor->processSegment(nullptr, 0, 0);
+            auto lastSegment = encryptor->processSegment(nullptr, 0, 0, 0);
             ciphertext.insert(ciphertext.end(), lastSegment.begin(), lastSegment.end());
         }
     }
@@ -129,7 +129,7 @@ TEST_CASE("E2E with 1MB segments", "[e2e]") {
         
         while (offset < ciphertext.size()) {
             size_t chunkSize = std::min(encSegmentSize, ciphertext.size() - offset);
-            auto segment = decryptor->processSegment(ciphertext.data(), offset, chunkSize);
+            auto segment = decryptor->processSegment(ciphertext.data(), offset, chunkSize, ciphertext.size());
             decrypted.insert(decrypted.end(), segment.begin(), segment.end());
             offset += chunkSize;
         }

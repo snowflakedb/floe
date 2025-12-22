@@ -29,13 +29,20 @@ FloeDecryptorImpl::FloeDecryptorImpl(
 }
 
 std::vector<uint8_t> FloeDecryptorImpl::processSegment(
-    const uint8_t* ciphertext, const size_t offset, const size_t length) {
+    const uint8_t* ciphertext, const size_t offset, const size_t length, const size_t totalLength) {
 
     return processInternal([&] {
-        const uint8_t* inputPtr = ciphertext + offset;
-
         verifyMinimalSegmentLength(length);
         verifySegmentNotTooLong(length);
+
+        if (offset > totalLength || totalLength - offset < length) {
+            throw FloeException("invalid offset/length for provided input");
+        }
+        if (length > 0 && ciphertext == nullptr) {
+            throw FloeException("input cannot be null when length > 0");
+        }
+
+        const uint8_t* inputPtr = length > 0 ? ciphertext + offset : nullptr;
 
         const bool isTerminal = FloeDecryptorImpl::isTerminal(inputPtr);
 
@@ -68,7 +75,7 @@ std::vector<uint8_t> FloeDecryptorImpl::processSegment(
 }
 
 std::vector<uint8_t> FloeDecryptorImpl::processSegment(const std::vector<uint8_t>& ciphertext) {
-    return processSegment(ciphertext.data(), 0, ciphertext.size());
+    return processSegment(ciphertext.data(), 0, ciphertext.size(), ciphertext.size());
 }
 
 bool FloeDecryptorImpl::isClosed() const {

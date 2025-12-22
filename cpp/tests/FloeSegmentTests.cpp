@@ -31,25 +31,25 @@ TEST_CASE("Segment encryption and decryption with offset and limit", "[segment]"
     
     std::vector<uint8_t> ciphertext;
     
-    auto ct1 = encryptor->processSegment(testData.data(), 0, plaintextSegmentLength);
+    auto ct1 = encryptor->processSegment(testData.data(), 0, plaintextSegmentLength, testData.size());
     ciphertext.insert(ciphertext.end(), ct1.begin(), ct1.end());
     
-    auto ct2 = encryptor->processSegment(testData.data(), plaintextSegmentLength, plaintextSegmentLength);
+    auto ct2 = encryptor->processSegment(testData.data(), plaintextSegmentLength, plaintextSegmentLength, testData.size());
     ciphertext.insert(ciphertext.end(), ct2.begin(), ct2.end());
     
-    auto ct3 = encryptor->processSegment(testData.data(), 2 * plaintextSegmentLength, 0);
+    auto ct3 = encryptor->processSegment(testData.data(), 2 * plaintextSegmentLength, 0, testData.size());
     ciphertext.insert(ciphertext.end(), ct3.begin(), ct3.end());
     
     std::vector<uint8_t> plaintext;
     
-    auto pt1 = decryptor->processSegment(ciphertext.data(), 0, encryptedSegmentLength);
+    auto pt1 = decryptor->processSegment(ciphertext.data(), 0, encryptedSegmentLength, ciphertext.size());
     plaintext.insert(plaintext.end(), pt1.begin(), pt1.end());
     
-    auto pt2 = decryptor->processSegment(ciphertext.data(), encryptedSegmentLength, encryptedSegmentLength);
+    auto pt2 = decryptor->processSegment(ciphertext.data(), encryptedSegmentLength, encryptedSegmentLength, ciphertext.size());
     plaintext.insert(plaintext.end(), pt2.begin(), pt2.end());
     
     auto pt3 = decryptor->processSegment(ciphertext.data(), 2 * encryptedSegmentLength, 
-                                         encryptedSegmentLength - plaintextSegmentLength);
+                                         encryptedSegmentLength - plaintextSegmentLength, ciphertext.size());
     plaintext.insert(plaintext.end(), pt3.begin(), pt3.end());
     
     REQUIRE(plaintext == testData);

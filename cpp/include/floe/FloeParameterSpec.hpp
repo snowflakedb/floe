@@ -15,14 +15,6 @@ public:
 
     FloeParameterSpec(const Aead& aead, const Hash& hash, int encryptedSegmentLength, int floeIvLength);
 
-    FloeParameterSpec(
-        Aead aead,
-        Hash hash,
-        int encryptedSegmentLength,
-        int floeIvLength,
-        std::optional<int> keyRotationModuloOverride,
-        std::optional<uint64_t> maxSegmentNumberOverride);
-
     [[nodiscard]] int getEncryptedSegmentLength() const { return encryptedSegmentLength_; }
     [[nodiscard]] int getPlainTextSegmentLength() const;
     [[nodiscard]] int getHeaderSize() const;
@@ -33,6 +25,14 @@ private:
     friend class BaseSegmentProcessor;
     friend class FloeEncryptorImpl;
     friend class FloeDecryptorImpl;
+    
+    FloeParameterSpec(
+        Aead aead,
+        Hash hash,
+        int encryptedSegmentLength,
+        int floeIvLength,
+        std::optional<int> keyRotationModuloOverride,
+        std::optional<uint64_t> maxSegmentNumberOverride);
     
     [[nodiscard]] std::vector<uint8_t> paramEncode() const;
     

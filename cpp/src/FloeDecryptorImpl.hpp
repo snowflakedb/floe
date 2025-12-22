@@ -23,7 +23,7 @@ public:
     
     ~FloeDecryptorImpl() override;
     
-    std::vector<uint8_t> processSegment(const uint8_t* ciphertext, size_t offset, size_t length) override;
+    std::vector<uint8_t> processSegment(const uint8_t* ciphertext, size_t offset, size_t length, size_t totalLength) override;
     
     std::vector<uint8_t> processSegment(const std::vector<uint8_t>& ciphertext) override;
     

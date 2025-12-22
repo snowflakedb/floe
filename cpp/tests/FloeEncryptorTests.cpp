@@ -136,6 +136,37 @@ TEST_CASE("Encryptor rejects segments after terminal segment", "[encryptor]") {
     REQUIRE_THROWS_AS(encryptor->processSegment(segment), floe::FloeException);
 }
 
+TEST_CASE("Encryptor rejects invalid offset/length for pointer API", "[encryptor]") {
+    auto key = createTestKey();
+    auto parameterSpec = floe::FloeParameterSpec(
+        floe::Aead::fromType(floe::AeadType::AES_GCM_256),
+        floe::Hash::fromType(floe::HashType::SHA384),
+        40,
+        32
+    );
+
+    auto floe = std::make_unique<floe::Floe>(parameterSpec);
+    auto aadHelper = createTestAad();
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
+
+    std::vector<uint8_t> data(8, 0x01);
+
+    // offset past total length
+    REQUIRE_THROWS_AS(
+        encryptor->processSegment(data.data(), data.size() + 1, 0, data.size()),
+        floe::FloeException);
+
+    // length extends beyond available bytes
+    REQUIRE_THROWS_AS(
+        encryptor->processSegment(data.data(), 4, 5, data.size()),
+        floe::FloeException);
+
+    // null input with non-zero length
+    REQUIRE_THROWS_AS(
+        encryptor->processSegment(nullptr, 0, 1, 1),
+        floe::FloeException);
+}
+
 TEST_CASE("Encryptor clears exceptional state after correct segment", "[encryptor]") {
     auto key = createTestKey();
     

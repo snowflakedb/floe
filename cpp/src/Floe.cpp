@@ -6,6 +6,7 @@
 #include "FloeAad.hpp"
 #include "KeyDerivator.hpp"
 #include "floe/FloeException.hpp"
+#include <openssl/crypto.h>
 #include <openssl/rand.h>
 
 namespace floe {
@@ -88,8 +89,8 @@ std::unique_ptr<FloeDecryptor> Floe::createDecryptor(
     const std::vector headerTagFromHeader(
         floeHeader + offset, floeHeader + offset + HEADER_TAG_LENGTH);
 
-    if (const std::vector<uint8_t> headerTag = keyDerivator_->hkdfExpandHeaderTag(floeKey, floeIv, floeAad);
-        headerTag != headerTagFromHeader) {
+    const std::vector<uint8_t> headerTag = keyDerivator_->hkdfExpandHeaderTag(floeKey, floeIv, floeAad);
+    if (CRYPTO_memcmp(headerTag.data(), headerTagFromHeader.data(), HEADER_TAG_LENGTH) != 0) {
         throw FloeException("invalid header tag");
     }
     

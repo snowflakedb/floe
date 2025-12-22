@@ -9,7 +9,7 @@ class FloeEncryptor {
 public:
     virtual ~FloeEncryptor() = default;
     
-    [[nodiscard]] virtual std::vector<uint8_t> processSegment(const uint8_t* plaintext, size_t offset, size_t length) = 0;
+    [[nodiscard]] virtual std::vector<uint8_t> processSegment(const uint8_t* plaintext, size_t offset, size_t length, size_t totalLength) = 0;
     
     [[nodiscard]] virtual std::vector<uint8_t> processSegment(const std::vector<uint8_t>& plaintext) = 0;
     

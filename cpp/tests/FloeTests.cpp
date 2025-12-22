@@ -35,7 +35,7 @@ TEST_CASE("Basic encryption and decryption", "[floe]") {
         
         size_t offset = headerSize;
         size_t segmentLength = ciphertext.size() - offset;
-        auto segment = decryptor->processSegment(ciphertext.data(), offset, segmentLength);
+        auto segment = decryptor->processSegment(ciphertext.data(), offset, segmentLength, ciphertext.size());
         decrypted.insert(decrypted.end(), segment.begin(), segment.end());
     }
     
@@ -84,16 +84,16 @@ TEST_CASE("Multiple segments encryption and decryption", "[floe]") {
         size_t offset = headerSize;
         size_t encryptedSegmentSize = parameterSpec.getEncryptedSegmentLength();
         
-        auto dec1 = decryptor->processSegment(ciphertext.data(), offset, encryptedSegmentSize);
+        auto dec1 = decryptor->processSegment(ciphertext.data(), offset, encryptedSegmentSize, ciphertext.size());
         decrypted.insert(decrypted.end(), dec1.begin(), dec1.end());
         offset += encryptedSegmentSize;
         
-        auto dec2 = decryptor->processSegment(ciphertext.data(), offset, encryptedSegmentSize);
+        auto dec2 = decryptor->processSegment(ciphertext.data(), offset, encryptedSegmentSize, ciphertext.size());
         decrypted.insert(decrypted.end(), dec2.begin(), dec2.end());
         offset += encryptedSegmentSize;
         
         size_t lastSegmentSize = ciphertext.size() - offset;
-        auto dec3 = decryptor->processSegment(ciphertext.data(), offset, lastSegmentSize);
+        auto dec3 = decryptor->processSegment(ciphertext.data(), offset, lastSegmentSize, ciphertext.size());
         decrypted.insert(decrypted.end(), dec3.begin(), dec3.end());
     }
     
@@ -137,7 +137,7 @@ TEST_CASE("Empty segment encryption and decryption", "[floe]") {
         
         size_t offset = headerSize;
         size_t segmentLength = ciphertext.size() - offset;
-        auto segment = decryptor->processSegment(ciphertext.data(), offset, segmentLength);
+        auto segment = decryptor->processSegment(ciphertext.data(), offset, segmentLength, ciphertext.size());
         decrypted.insert(decrypted.end(), segment.begin(), segment.end());
     }
     
@@ -196,7 +196,7 @@ TEST_CASE("Tampered ciphertext throws exception", "[floe]") {
         size_t segmentLength = ciphertext.size() - offset;
         
         REQUIRE_THROWS_AS(
-            decryptor->processSegment(ciphertext.data(), offset, segmentLength),
+            decryptor->processSegment(ciphertext.data(), offset, segmentLength, ciphertext.size()),
             floe::FloeException
         );
     }
@@ -226,7 +226,7 @@ TEST_CASE("Large data encryption and decryption", "[floe]") {
         size_t offset = 0;
         while (offset < largeData.size()) {
             size_t chunkSize = std::min(plaintextSegmentSize, largeData.size() - offset);
-            auto encrypted = encryptor->processSegment(largeData.data(), offset, chunkSize);
+            auto encrypted = encryptor->processSegment(largeData.data(), offset, chunkSize, largeData.size());
             ciphertext.insert(ciphertext.end(), encrypted.begin(), encrypted.end());
             offset += chunkSize;
         }
@@ -246,7 +246,7 @@ TEST_CASE("Large data encryption and decryption", "[floe]") {
         
         while (offset < ciphertext.size()) {
             size_t chunkSize = std::min(encryptedSegmentSize, ciphertext.size() - offset);
-            auto segment = decryptor->processSegment(ciphertext.data(), offset, chunkSize);
+            auto segment = decryptor->processSegment(ciphertext.data(), offset, chunkSize, ciphertext.size());
             decrypted.insert(decrypted.end(), segment.begin(), segment.end());
             offset += chunkSize;
         }

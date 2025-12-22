@@ -63,7 +63,7 @@ namespace {
         
         while (offset < ciphertext.size()) {
             size_t segLength = std::min(encryptedSegmentLength, ciphertext.size() - offset);
-            auto plaintextSegment = decryptor->processSegment(ciphertext.data(), offset, segLength);
+            auto plaintextSegment = decryptor->processSegment(ciphertext.data(), offset, segLength, ciphertext.size());
             plaintext.insert(plaintext.end(), plaintextSegment.begin(), plaintextSegment.end());
             offset += segLength;
         }
