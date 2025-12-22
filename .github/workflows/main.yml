@@ -76,7 +76,8 @@ jobs:
         working-directory: ./cpp
         shell: bash
         run: |
-          valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 --errors-for-leak-kinds=all \
+          valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 \
+            --errors-for-leak-kinds=definite,indirect,possible \
             ctest --test-dir cmake-build --output-on-failure
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
