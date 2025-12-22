@@ -228,3 +228,27 @@ TEST_CASE("Decryptor rejects invalid offset/length for pointer API", "[decryptor
         decryptor->processSegment(ciphertext.data(), ciphertext.size() + 1, 0, ciphertext.size()),
         floe::FloeException);
 }
+
+TEST_CASE("Decryptor rejects null ciphertext when length > 0", "[decryptor]") {
+    auto key = createTestKey();
+
+    auto parameterSpec = floe::FloeParameterSpec(
+        floe::Aead::fromType(floe::AeadType::AES_GCM_256),
+        floe::Hash::fromType(floe::HashType::SHA384),
+        40,
+        32
+    );
+
+    auto floe = std::make_unique<floe::Floe>(parameterSpec);
+
+    auto aadHelper = createTestAad("Test AAD");
+
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
+    auto header = encryptor->getHeader();
+
+    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
+
+    REQUIRE_THROWS_AS(
+        decryptor->processSegment(nullptr, 0, 1, 1),
+        floe::FloeException);
+}
