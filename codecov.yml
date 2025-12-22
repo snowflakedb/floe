@@ -10,4 +10,5 @@ coverage:
         threshold: 0%
 
 ignore:
-  - "cpp/tests/**/*"
+  - "tests/**"
+  - "**/tests/**"
