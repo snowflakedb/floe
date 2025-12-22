@@ -5,6 +5,8 @@ project(floe
 include(cmake/platform.cmake)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_TESTING "Build tests" ON)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
@@ -13,15 +15,19 @@ if(ENABLE_COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
 endif()
 
-file(GLOB SOURCE_FILES
+file(GLOB_RECURSE SOURCE_FILES
         "src/*.cpp"
 )
 
-file(GLOB PUBLIC_HEADERS
+file(GLOB_RECURSE INTERNAL_HEADERS
+        "src/internal/*.hpp"
+)
+
+file(GLOB_RECURSE PUBLIC_HEADERS
         "include/floe/*.hpp"
 )
 
-add_library(floe STATIC ${SOURCE_FILES} ${PUBLIC_HEADERS})
+add_library(floe STATIC ${SOURCE_FILES} ${INTERNAL_HEADERS} ${PUBLIC_HEADERS})
 
 target_include_directories(floe
     PUBLIC
@@ -29,14 +35,18 @@ target_include_directories(floe
         $<INSTALL_INTERFACE:include>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 find_package(OpenSSL REQUIRED)
-target_link_libraries(floe PRIVATE OpenSSL::Crypto)
+target_link_libraries(floe
+    PRIVATE
+        OpenSSL::Crypto
+)
 
 if(BUILD_TESTING)
     enable_testing()
-    add_subdirectory(test)
+    add_subdirectory(tests)
 endif()
 
 if(ENABLE_COVERAGE)
@@ -46,13 +56,12 @@ if(ENABLE_COVERAGE)
     if(LCOV_PATH AND GENHTML_PATH)
         add_custom_target(coverage
             COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-            COMMAND ${LCOV_PATH} --capture --directory ${CMAKE_BINARY_DIR}/CMakeFiles/floe.dir --output-file coverage.info
-            COMMAND ${LCOV_PATH} --extract coverage.info '*/src/*' --output-file coverage_filtered.info
-            COMMAND ${LCOV_PATH} --remove coverage_filtered.info '*/test/*' '*_test.cpp' '*_tests.cpp' --output-file coverage_filtered.info --ignore-errors unused
-            COMMAND ${GENHTML_PATH} coverage_filtered.info --output-directory coverage_html
+            COMMAND ${LCOV_PATH} --rc derive_function_end_line=0 --capture --directory ${CMAKE_BINARY_DIR}/CMakeFiles/floe.dir --output-file coverage.info --ignore-errors format
+            COMMAND ${LCOV_PATH} --rc derive_function_end_line=0 --extract coverage.info '*/src/*' --output-file coverage_filtered.info --ignore-errors format
+            COMMAND ${GENHTML_PATH} --rc derive_function_end_line=0 --ignore-errors category coverage_filtered.info --output-directory coverage_html
             COMMAND ${CMAKE_COMMAND} -E echo "Coverage report generated at: ${CMAKE_BINARY_DIR}/coverage_html/index.html"
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            DEPENDS unit_tests
+            DEPENDS tests
             COMMENT "Generating code coverage report..."
         )
     else()
