@@ -19,13 +19,17 @@ public:
     [[nodiscard]] int getPlainTextSegmentLength() const;
     [[nodiscard]] int getHeaderSize() const;
 
+#ifdef FLOE_TESTING
+public:  // Expose only in test builds
+#else
 private:
+#endif
     friend class Floe;
     friend class KeyDerivator;
     friend class BaseSegmentProcessor;
     friend class FloeEncryptorImpl;
     friend class FloeDecryptorImpl;
-    
+
     FloeParameterSpec(
         Aead aead,
         Hash hash,
@@ -33,7 +37,7 @@ private:
         int floeIvLength,
         std::optional<int> keyRotationModuloOverride,
         std::optional<uint64_t> maxSegmentNumberOverride);
-    
+
     [[nodiscard]] std::vector<uint8_t> paramEncode() const;
     
     [[nodiscard]] const Aead& getAead() const { return aead_; }
