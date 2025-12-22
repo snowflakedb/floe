@@ -1,6 +1,7 @@
 #pragma once
 
 #include "floe/FloeParameterSpec.hpp"
+#include <cstdint>
 #include <memory>
 #include <functional>
 #include <vector>

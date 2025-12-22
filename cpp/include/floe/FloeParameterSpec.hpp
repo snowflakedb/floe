@@ -2,6 +2,7 @@
 
 #include "floe/Aead.hpp"
 #include "floe/Hash.hpp"
+#include <cstdint>
 #include <vector>
 #include <optional>
 

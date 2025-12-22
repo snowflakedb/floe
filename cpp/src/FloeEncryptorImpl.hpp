@@ -3,6 +3,7 @@
 #include "floe/FloeEncryptor.hpp"
 #include "BaseSegmentProcessor.hpp"
 #include "floe/FloeParameterSpec.hpp"
+#include <cstdint>
 #include <memory>
 
 namespace floe {

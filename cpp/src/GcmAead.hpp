@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AeadProvider.hpp"
+#include <cstdint>
 #include <openssl/evp.h>
 
 namespace floe {
