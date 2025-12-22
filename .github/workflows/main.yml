@@ -66,12 +66,12 @@ jobs:
         shell: bash
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -B cmake-build
-          cmake --build cmake-build -- -j $(nproc)
+          cmake --build cmake-build -- -j
       - name: Run tests and generate coverage
         working-directory: ./cpp
         shell: bash
         run: |
-          cmake --build cmake-build --target coverage -- -j $(nproc)
+          cmake --build cmake-build --target coverage -- -j
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         env:
