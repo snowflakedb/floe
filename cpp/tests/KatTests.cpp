@@ -1,15 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/Floe.hpp>
-#include <floe/FloeParameterSpec.hpp>
-#include <floe/FloeDecryptor.hpp>
-#include <floe/Aead.hpp>
-#include <floe/Hash.hpp>
-#include <vector>
-#include <string>
+#include "TestUtils.hpp"
 #include <fstream>
 #include <sstream>
-#include <cstring>
 #include <iomanip>
+
+using floe::test::createTestAad;
 
 namespace {
     std::vector<uint8_t> hexToBytes(const std::string& hex) {
@@ -53,15 +48,13 @@ namespace {
         
         // Reference key and AAD from Java tests
         std::vector<uint8_t> referenceKey(32, 0);
-        const auto* aadStr = "This is AAD";
-        const auto* referenceAad = reinterpret_cast<const uint8_t*>(aadStr);
-        size_t aadLength = strlen(aadStr);
+        auto aadHelper = createTestAad();
         
         // Extract header
         size_t headerSize = parameterSpec.getHeaderSize();
         std::vector header(ciphertext.begin(), ciphertext.begin() + static_cast<std::ptrdiff_t>(headerSize));
         
-        auto decryptor = floe->createDecryptor(referenceKey, referenceAad, aadLength, 
+        auto decryptor = floe->createDecryptor(referenceKey, aadHelper.data, aadHelper.length, 
                                                 header.data(), header.size());
         
         std::vector<uint8_t> plaintext;

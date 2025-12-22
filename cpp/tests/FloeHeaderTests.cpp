@@ -1,24 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/Floe.hpp>
-#include <floe/FloeParameterSpec.hpp>
-#include <floe/FloeEncryptor.hpp>
-#include <floe/FloeDecryptor.hpp>
-#include <floe/FloeException.hpp>
-#include <floe/Aead.hpp>
-#include <floe/Hash.hpp>
-#include <vector>
-#include <string>
-#include <cstring>
+#include "TestUtils.hpp"
 
-namespace {
-    std::vector<uint8_t> createTestKey() {
-        std::vector<uint8_t> key(32, 0);
-        for (size_t i = 0; i < key.size(); ++i) {
-            key[i] = static_cast<uint8_t>(i);
-        }
-        return key;
-    }
-}
+using floe::test::createTestKey;
+using floe::test::createTestAad;
 
 TEST_CASE("Header validation matches for encryption and decryption", "[header]") {
     auto key = createTestKey();
@@ -31,14 +15,12 @@ TEST_CASE("Header validation matches for encryption and decryption", "[header]")
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
     
-    auto decryptor = floe->createDecryptor(key, aad, aadLength, header.data(), header.size());
+    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
     
     const auto encrypted = encryptor->processSegment({});
     auto decrypted = decryptor->processSegment(encrypted);
@@ -57,17 +39,15 @@ TEST_CASE("Header validation fails when params are tampered", "[header]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
     
     header[0] = 12;
     
     REQUIRE_THROWS_AS(
-        floe->createDecryptor(key, aad, aadLength, header.data(), header.size()),
+        floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size()),
         floe::FloeException
     );
     
@@ -85,17 +65,15 @@ TEST_CASE("Header validation fails when IV is tampered", "[header]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
     
     header[11]++;
     
     REQUIRE_THROWS_AS(
-        floe->createDecryptor(key, aad, aadLength, header.data(), header.size()),
+        floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size()),
         floe::FloeException
     );
     
@@ -113,17 +91,15 @@ TEST_CASE("Header validation fails when header tag is tampered", "[header]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
     
     header[header.size() - 3]++;
     
     REQUIRE_THROWS_AS(
-        floe->createDecryptor(key, aad, aadLength, header.data(), header.size()),
+        floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size()),
         floe::FloeException
     );
     
@@ -143,20 +119,18 @@ TEST_CASE("Key length is validated for encryption", "[header][validation]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
     REQUIRE_THROWS_AS(
-        floe->createEncryptor(longKey, aad, aadLength),
+        floe->createEncryptor(longKey, aadHelper.data, aadHelper.length),
         floe::FloeException
     );
     
-    auto encryptor = floe->createEncryptor(validKey, aad, aadLength);
+    auto encryptor = floe->createEncryptor(validKey, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
     
     REQUIRE_THROWS_AS(
-        floe->createDecryptor(longKey, aad, aadLength, header.data(), header.size()),
+        floe->createDecryptor(longKey, aadHelper.data, aadHelper.length, header.data(), header.size()),
         floe::FloeException
     );
     

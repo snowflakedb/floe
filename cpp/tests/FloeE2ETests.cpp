@@ -1,21 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/Floe.hpp>
-#include <floe/FloeParameterSpec.hpp>
-#include <floe/FloeEncryptor.hpp>
-#include <floe/FloeDecryptor.hpp>
-#include <vector>
-#include <cstring>
+#include "TestUtils.hpp"
 #include <random>
 
-namespace {
-    std::vector<uint8_t> createTestKey() {
-        std::vector<uint8_t> key(32, 0);
-        for (size_t i = 0; i < key.size(); ++i) {
-            key[i] = static_cast<uint8_t>(i);
-        }
-        return key;
-    }
-}
+using floe::test::createTestKey;
 
 TEST_CASE("E2E encryption and decryption with various plaintext sizes", "[e2e]") {
     auto key = createTestKey();

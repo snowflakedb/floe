@@ -1,24 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/Floe.hpp>
-#include <floe/FloeParameterSpec.hpp>
-#include <floe/FloeEncryptor.hpp>
-#include <floe/FloeDecryptor.hpp>
-#include <floe/FloeException.hpp>
-#include <floe/Aead.hpp>
-#include <floe/Hash.hpp>
-#include <vector>
-#include <string>
-#include <cstring>
+#include "TestUtils.hpp"
 
-namespace {
-    std::vector<uint8_t> createTestKey() {
-        std::vector<uint8_t> key(32, 0);
-        for (size_t i = 0; i < key.size(); ++i) {
-            key[i] = static_cast<uint8_t>(i);
-        }
-        return key;
-    }
-}
+using floe::test::createTestKey;
+using floe::test::createTestAad;
 
 TEST_CASE("Encryptor creates correct header format", "[encryptor]") {
     std::vector<uint8_t> key(32, 0);
@@ -34,11 +18,9 @@ TEST_CASE("Encryptor creates correct header format", "[encryptor]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "test aad";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad("test aad");
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
     
     REQUIRE(header[0] == 0);
@@ -69,11 +51,9 @@ TEST_CASE("Encryptor throws exception on max segment reached", "[encryptor]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     
     std::vector<uint8_t> plaintext(8);
     (void)encryptor->processSegment(plaintext);
@@ -93,11 +73,9 @@ TEST_CASE("Encryptor throws exception when plaintext is too long", "[encryptor]"
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     
     std::vector<uint8_t> tooLong(1024);
     REQUIRE_THROWS_AS(encryptor->processSegment(tooLong), floe::FloeException);
@@ -117,18 +95,16 @@ TEST_CASE("Encryptor accepts segments with correct size", "[encryptor]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
     SECTION("Last segment size 0") {
-        auto encryptor = floe->createEncryptor(key, aad, aadLength);
+        auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
         REQUIRE_NOTHROW(encryptor->processSegment(std::vector<uint8_t>(8)));
         REQUIRE_NOTHROW(encryptor->processSegment(std::vector<uint8_t>(0)));
     }
     
     SECTION("Last segment size 7") {
-        auto encryptor = floe->createEncryptor(key, aad, aadLength);
+        auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
         REQUIRE_NOTHROW(encryptor->processSegment(std::vector<uint8_t>(8)));
         REQUIRE_NOTHROW(encryptor->processSegment(std::vector<uint8_t>(7)));
     }
@@ -172,12 +148,10 @@ TEST_CASE("Encryptor clears exceptional state after correct segment", "[encrypto
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
-    auto decryptor = floe->createDecryptor(key, aad, aadLength, 
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
+    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, 
                                            encryptor->getHeader().data(), 
                                            encryptor->getHeader().size());
     
@@ -206,11 +180,9 @@ TEST_CASE("Encryptor throws on negative offset", "[encryptor]") {
 
     const auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    const auto aadStr = "This is AAD";
-    const auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    const size_t aadLength = strlen(aadStr);
+    const auto aadHelper = createTestAad();
 
-    const auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    const auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     
     std::vector<uint8_t> data(8);
     

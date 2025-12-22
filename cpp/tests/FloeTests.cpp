@@ -1,19 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/Floe.hpp>
-#include <floe/FloeParameterSpec.hpp>
-#include <floe/FloeEncryptor.hpp>
-#include <floe/FloeDecryptor.hpp>
-#include <floe/FloeException.hpp>
-#include <vector>
-#include <string>
+#include "TestUtils.hpp"
 
-std::vector<uint8_t> createTestKey() {
-    std::vector<uint8_t> key(32, 0);
-    for (size_t i = 0; i < key.size(); ++i) {
-        key[i] = static_cast<uint8_t>(i);
-    }
-    return key;
-}
+using floe::test::createTestKey;
+using floe::test::createTestAad;
 
 TEST_CASE("Basic encryption and decryption", "[floe]") {
     auto key = createTestKey();
@@ -21,15 +10,13 @@ TEST_CASE("Basic encryption and decryption", "[floe]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "Additional Authenticated Data";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad("Additional Authenticated Data");
     
     std::vector<uint8_t> plaintext = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     
     std::vector<uint8_t> ciphertext;
     {
-        auto encryptor = floe->createEncryptor(key, aad, aadLength);
+        auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
         auto header = encryptor->getHeader();
         ciphertext.insert(ciphertext.end(), header.begin(), header.end());
         
@@ -44,7 +31,7 @@ TEST_CASE("Basic encryption and decryption", "[floe]") {
         size_t headerSize = parameterSpec.getHeaderSize();
         std::vector header(ciphertext.begin(), ciphertext.begin() + static_cast<std::ptrdiff_t>(headerSize));
         
-        auto decryptor = floe->createDecryptor(key, aad, aadLength, header.data(), header.size());
+        auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
         
         size_t offset = headerSize;
         size_t segmentLength = ciphertext.size() - offset;

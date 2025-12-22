@@ -1,23 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/Floe.hpp>
-#include <floe/FloeParameterSpec.hpp>
-#include <floe/FloeEncryptor.hpp>
-#include <floe/FloeDecryptor.hpp>
-#include <floe/Aead.hpp>
-#include <floe/Hash.hpp>
-#include <vector>
-#include <cstring>
+#include "TestUtils.hpp"
 #include <random>
 
-namespace {
-    std::vector<uint8_t> createTestKey() {
-        std::vector<uint8_t> key(32, 0);
-        for (size_t i = 0; i < key.size(); ++i) {
-            key[i] = static_cast<uint8_t>(i);
-        }
-        return key;
-    }
-}
+using floe::test::createTestKey;
+using floe::test::createTestAad;
 
 TEST_CASE("Segment encryption and decryption with offset and limit", "[segment]") {
     auto key = createTestKey();
@@ -33,13 +19,11 @@ TEST_CASE("Segment encryption and decryption with offset and limit", "[segment]"
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
-    auto decryptor = floe->createDecryptor(key, aad, aadLength, header.data(), header.size());
+    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
     
     std::vector<uint8_t> testData = {'a', 'b', 'c', 'd'};
     size_t plaintextSegmentLength = parameterSpec.getPlainTextSegmentLength();
@@ -85,13 +69,11 @@ TEST_CASE("Segment encryption and decryption with random data", "[segment]") {
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
-    auto decryptor = floe->createDecryptor(key, aad, aadLength, header.data(), header.size());
+    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
     
     std::vector<uint8_t> testData(8);
     std::random_device rd;
@@ -125,13 +107,11 @@ TEST_CASE("Segment encryption and decryption with derived key rotation", "[segme
 
     auto floe = std::make_unique<floe::Floe>(parameterSpec);
 
-    auto aadStr = "This is AAD";
-    auto aad = reinterpret_cast<const uint8_t*>(aadStr);
-    size_t aadLength = strlen(aadStr);
+    auto aadHelper = createTestAad();
     
-    auto encryptor = floe->createEncryptor(key, aad, aadLength);
+    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
     auto header = encryptor->getHeader();
-    auto decryptor = floe->createDecryptor(key, aad, aadLength, header.data(), header.size());
+    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
     
     std::vector<uint8_t> testData(8, 0);
     
