@@ -1,4 +1,5 @@
 #include "FloePurpose.hpp"
+#include <algorithm>
 
 namespace floe {
 
@@ -13,9 +14,10 @@ std::vector<uint8_t> HeaderTagFloePurpose::generate() const {
 
 DekTagFloePurpose::DekTagFloePurpose(const uint64_t segmentCount) {
     bytes_.resize(PREFIX.size() + 8);
-    std::memcpy(bytes_.data(), PREFIX.data(), PREFIX.size());
+    std::ranges::copy(PREFIX, bytes_.begin());
     const uint64_t segmentCountBE = __builtin_bswap64(segmentCount);
-    std::memcpy(bytes_.data() + PREFIX.size(), &segmentCountBE, 8);
+    const auto* countBytes = reinterpret_cast<const uint8_t*>(&segmentCountBE);
+    std::copy_n(countBytes, 8, bytes_.data() + PREFIX.size());
 }
 
 std::vector<uint8_t> DekTagFloePurpose::generate() const {

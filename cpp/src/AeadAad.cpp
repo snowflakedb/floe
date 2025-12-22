@@ -1,11 +1,13 @@
 #include "AeadAad.hpp"
+#include <algorithm>
 
 namespace floe {
 
 AeadAad::AeadAad(const uint64_t segmentCounter, const uint8_t terminalityByte) {
     bytes_.resize(9);
     const uint64_t counterBE = __builtin_bswap64(segmentCounter);
-    std::memcpy(bytes_.data(), &counterBE, 8);
+    const auto* counterBytes = reinterpret_cast<const uint8_t*>(&counterBE);
+    std::copy_n(counterBytes, 8, bytes_.data());
     bytes_[8] = terminalityByte;
 }
 

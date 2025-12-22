@@ -72,21 +72,21 @@ std::unique_ptr<FloeDecryptor> Floe::createDecryptor(
     
     size_t offset = 0;
     
-    std::vector<uint8_t> encodedParamsFromHeader(encodedParams.size());
-    std::memcpy(encodedParamsFromHeader.data(), floeHeader + offset, encodedParams.size());
+    const std::vector encodedParamsFromHeader(
+        floeHeader + offset, floeHeader + offset + encodedParams.size());
     offset += encodedParams.size();
     
     if (encodedParams != encodedParamsFromHeader) {
         throw FloeException("invalid parameters header");
     }
     
-    std::vector<uint8_t> floeIvBytes(parameterSpec_.getFloeIvLength());
-    std::memcpy(floeIvBytes.data(), floeHeader + offset, parameterSpec_.getFloeIvLength());
+    const std::vector floeIvBytes(
+        floeHeader + offset, floeHeader + offset + parameterSpec_.getFloeIvLength());
     offset += parameterSpec_.getFloeIvLength();
     FloeIv floeIv(floeIvBytes);
     
-    std::vector<uint8_t> headerTagFromHeader(HEADER_TAG_LENGTH);
-    std::memcpy(headerTagFromHeader.data(), floeHeader + offset, HEADER_TAG_LENGTH);
+    const std::vector headerTagFromHeader(
+        floeHeader + offset, floeHeader + offset + HEADER_TAG_LENGTH);
 
     if (const std::vector<uint8_t> headerTag = keyDerivator_->hkdfExpandHeaderTag(floeKey, floeIv, floeAad);
         headerTag != headerTagFromHeader) {

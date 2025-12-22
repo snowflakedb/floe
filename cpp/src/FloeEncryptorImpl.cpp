@@ -6,6 +6,7 @@
 #include "AeadProvider.hpp"
 #include "floe/Aead.hpp"
 #include "floe/FloeException.hpp"
+#include <algorithm>
 
 namespace floe {
 
@@ -95,12 +96,13 @@ std::vector<uint8_t> FloeEncryptorImpl::segmentToBytes(
     std::vector<uint8_t> output(ciphertextSegmentLength);
 
     const uint32_t markerBE = __builtin_bswap32(static_cast<uint32_t>(segmentLengthMarker));
-    std::memcpy(output.data(), &markerBE, 4);
+    const auto* markerBytes = reinterpret_cast<const uint8_t*>(&markerBE);
+    std::copy_n(markerBytes, 4, output.data());
     
-    std::memcpy(output.data() + 4, aeadIv.getBytes().data(), aeadIv.getBytes().size());
+    std::ranges::copy(aeadIv.getBytes(), output.data() + 4);
     
-    std::memcpy(output.data() + 4 + aeadIv.getBytes().size(), 
-                ciphertextWithAuthTag.data(), ciphertextWithAuthTag.size());
+    std::ranges::copy(ciphertextWithAuthTag,
+                      output.data() + 4 + aeadIv.getBytes().size());
     
     return output;
 }

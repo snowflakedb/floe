@@ -1,4 +1,5 @@
 #include <utility>
+#include <algorithm>
 
 #include "floe/FloeParameterSpec.hpp"
 #include "floe/FloeException.hpp"
@@ -62,10 +63,12 @@ std::vector<uint8_t> FloeParameterSpec::paramEncode() const {
     result[1] = hash_.getId();
 
     const uint32_t encSegLenBE = __builtin_bswap32(static_cast<uint32_t>(encryptedSegmentLength_));
-    std::memcpy(&result[2], &encSegLenBE, 4);
+    const auto* encSegBytes = reinterpret_cast<const uint8_t*>(&encSegLenBE);
+    std::copy_n(encSegBytes, 4, &result[2]);
 
     const uint32_t ivLenBE = __builtin_bswap32(static_cast<uint32_t>(floeIvLength_));
-    std::memcpy(&result[6], &ivLenBE, 4);
+    const auto* ivLenBytes = reinterpret_cast<const uint8_t*>(&ivLenBE);
+    std::copy_n(ivLenBytes, 4, &result[6]);
     
     return result;
 }

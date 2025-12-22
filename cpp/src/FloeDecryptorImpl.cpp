@@ -6,6 +6,7 @@
 #include "AeadProvider.hpp"
 #include "floe/Aead.hpp"
 #include "floe/FloeException.hpp"
+#include <algorithm>
 
 namespace floe {
 
@@ -38,9 +39,9 @@ std::vector<uint8_t> FloeDecryptorImpl::processSegment(
 
         const bool isTerminal = FloeDecryptorImpl::isTerminal(inputPtr);
 
-        int32_t segmentSizeMarker;
-        std::memcpy(&segmentSizeMarker, inputPtr, 4);
-        segmentSizeMarker = static_cast<int32_t>(__builtin_bswap32(static_cast<uint32_t>(segmentSizeMarker)));
+        uint32_t segmentSizeMarkerBE;
+        std::copy_n(inputPtr, 4, reinterpret_cast<uint8_t*>(&segmentSizeMarkerBE));
+        const auto segmentSizeMarker = static_cast<int32_t>(__builtin_bswap32(segmentSizeMarkerBE));
 
         verifySegmentSizeWithSegmentSizeMarker(length, isTerminal, segmentSizeMarker);
 
@@ -95,9 +96,9 @@ void FloeDecryptorImpl::verifySegmentNotTooLong(const size_t length) const {
 }
 
 bool FloeDecryptorImpl::isTerminal(const uint8_t* data) {
-    int32_t marker;
-    std::memcpy(&marker, data, 4);
-    marker = static_cast<int32_t>(__builtin_bswap32(static_cast<uint32_t>(marker)));
+    uint32_t markerBE;
+    std::copy_n(data, 4, reinterpret_cast<uint8_t*>(&markerBE));
+    const auto marker = static_cast<int32_t>(__builtin_bswap32(markerBE));
     return marker != NON_TERMINAL_SEGMENT_SIZE_MARKER;
 }
 
