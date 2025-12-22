@@ -20,7 +20,7 @@ Floe::Floe(const FloeParameterSpec& parameterSpec)
 }
 
 std::unique_ptr<FloeEncryptor> Floe::createEncryptor(
-    const std::vector<uint8_t>& key,
+    const std::span<const uint8_t> key,
     const uint8_t* aad,
     const size_t aadLength) {
     
@@ -50,7 +50,7 @@ std::unique_ptr<FloeEncryptor> Floe::createEncryptor(
 }
 
 std::unique_ptr<FloeDecryptor> Floe::createDecryptor(
-    const std::vector<uint8_t>& key,
+    const std::span<const uint8_t> key,
     const uint8_t* aad,
     const size_t aadLength,
     const uint8_t* floeHeader,

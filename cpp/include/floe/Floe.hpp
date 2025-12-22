@@ -1,9 +1,8 @@
 #pragma once
 
 #include "floe/FloeParameterSpec.hpp"
-#include <cstdint>
 #include <memory>
-#include <vector>
+#include <span>
 
 namespace floe {
 
@@ -20,12 +19,12 @@ public:
     ~Floe();
     
     [[nodiscard]] std::unique_ptr<FloeEncryptor> createEncryptor(
-        const std::vector<uint8_t>& key,
+        std::span<const uint8_t> key,
         const uint8_t* aad,
         size_t aadLength);
     
     [[nodiscard]] std::unique_ptr<FloeDecryptor> createDecryptor(
-        const std::vector<uint8_t>& key,
+        std::span<const uint8_t> key,
         const uint8_t* aad,
         size_t aadLength,
         const uint8_t* floeHeader,

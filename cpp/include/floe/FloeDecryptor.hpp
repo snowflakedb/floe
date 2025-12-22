@@ -14,8 +14,6 @@ public:
     [[nodiscard]] virtual std::vector<uint8_t> processSegment(const std::vector<uint8_t>& ciphertext) = 0;
     
     [[nodiscard]] virtual bool isClosed() const = 0;
-    
-    virtual void close() = 0;
 };
 
 }

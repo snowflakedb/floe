@@ -4,8 +4,8 @@
 
 namespace floe {
 
-FloeKey::FloeKey(const std::vector<uint8_t>& keyData) 
-    : keyData_(keyData) {
+FloeKey::FloeKey(std::span<const uint8_t> keyData) 
+    : keyData_(keyData.begin(), keyData.end()) {
 }
 
 FloeKey::~FloeKey() {

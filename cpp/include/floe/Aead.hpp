@@ -15,6 +15,17 @@ enum class AeadType : uint8_t {
 class Aead {
 public:
     [[nodiscard]] static const Aead& fromType(AeadType type);
+
+private:
+    friend class FloeParameterSpec;
+    friend class KeyDerivator;
+    friend class BaseSegmentProcessor;
+    friend class FloeEncryptorImpl;
+    friend class FloeDecryptorImpl;
+    
+    Aead(AeadType type, std::string  algorithmName,
+         int keyLength, int ivLength, int authTagLength, int keyRotationMask,
+         uint64_t maxSegmentNumber);
     
     [[nodiscard]] AeadType getType() const { return type_; }
     [[nodiscard]] const std::string& getAlgorithmName() const { return algorithmName_; }
@@ -25,11 +36,6 @@ public:
     [[nodiscard]] uint64_t getMaxSegmentNumber() const { return maxSegmentNumber_; }
     
     [[nodiscard]] std::unique_ptr<AeadProvider> getAeadProvider() const;
-
-private:
-    Aead(AeadType type, std::string  algorithmName,
-         int keyLength, int ivLength, int authTagLength, int keyRotationMask,
-         uint64_t maxSegmentNumber);
     
     AeadType type_;
     std::string algorithmName_;

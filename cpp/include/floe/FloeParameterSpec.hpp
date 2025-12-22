@@ -23,19 +23,25 @@ public:
         std::optional<int> keyRotationModuloOverride,
         std::optional<uint64_t> maxSegmentNumberOverride);
 
-
-    [[nodiscard]] const Aead& getAead() const { return aead_; }
-    [[nodiscard]] const Hash& getHash() const { return hash_; }
-    [[nodiscard]] int getFloeIvLength() const { return floeIvLength_; }
     [[nodiscard]] int getEncryptedSegmentLength() const { return encryptedSegmentLength_; }
     [[nodiscard]] int getPlainTextSegmentLength() const;
-    [[nodiscard]] int getKeyRotationMask() const;
-    [[nodiscard]] uint64_t getMaxSegmentNumber() const;
-    [[nodiscard]] std::vector<uint8_t> getEncodedParams() const;
     [[nodiscard]] int getHeaderSize() const;
 
 private:
+    friend class Floe;
+    friend class KeyDerivator;
+    friend class BaseSegmentProcessor;
+    friend class FloeEncryptorImpl;
+    friend class FloeDecryptorImpl;
+    
     [[nodiscard]] std::vector<uint8_t> paramEncode() const;
+    
+    [[nodiscard]] const Aead& getAead() const { return aead_; }
+    [[nodiscard]] const Hash& getHash() const { return hash_; }
+    [[nodiscard]] int getFloeIvLength() const { return floeIvLength_; }
+    [[nodiscard]] int getKeyRotationMask() const;
+    [[nodiscard]] uint64_t getMaxSegmentNumber() const;
+    [[nodiscard]] std::vector<uint8_t> getEncodedParams() const;
     
     Aead aead_;
     Hash hash_;

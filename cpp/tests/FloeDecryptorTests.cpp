@@ -195,28 +195,3 @@ TEST_CASE("Decryptor throws exception if last segment length marker does not mat
     
     REQUIRE_THROWS_AS(decryptor->processSegment(std::vector<uint8_t>(40)), floe::FloeException);
 }
-
-TEST_CASE("Decryptor throws exception if last segment is never decrypted", "[decryptor]") {
-    auto key = createTestKey();
-    
-    auto parameterSpec = floe::FloeParameterSpec(
-        floe::Aead::fromType(floe::AeadType::AES_GCM_256),
-        floe::Hash::fromType(floe::HashType::SHA384),
-        40,
-        32
-    );
-    
-    auto floe = std::make_unique<floe::Floe>(parameterSpec);
-
-    auto aadHelper = createTestAad("Test AAD");
-    
-    auto encryptor = floe->createEncryptor(key, aadHelper.data, aadHelper.length);
-    auto header = encryptor->getHeader();
-    auto ciphertext1 = encryptor->processSegment(std::vector<uint8_t>(8));
-    auto ciphertext2 = encryptor->processSegment(std::vector<uint8_t>(4));
-    
-    auto decryptor = floe->createDecryptor(key, aadHelper.data, aadHelper.length, header.data(), header.size());
-    (void)decryptor->processSegment(ciphertext1);
-    
-    REQUIRE_THROWS_AS(decryptor->close(), floe::FloeException);
-}

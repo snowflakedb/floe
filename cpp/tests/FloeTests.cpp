@@ -37,8 +37,6 @@ TEST_CASE("Basic encryption and decryption", "[floe]") {
         size_t segmentLength = ciphertext.size() - offset;
         auto segment = decryptor->processSegment(ciphertext.data(), offset, segmentLength);
         decrypted.insert(decrypted.end(), segment.begin(), segment.end());
-        
-        decryptor->close();
     }
     
     REQUIRE(plaintext == decrypted);
@@ -97,8 +95,6 @@ TEST_CASE("Multiple segments encryption and decryption", "[floe]") {
         size_t lastSegmentSize = ciphertext.size() - offset;
         auto dec3 = decryptor->processSegment(ciphertext.data(), offset, lastSegmentSize);
         decrypted.insert(decrypted.end(), dec3.begin(), dec3.end());
-        
-        decryptor->close();
     }
     
     std::vector<uint8_t> expectedPlaintext;
@@ -143,8 +139,6 @@ TEST_CASE("Empty segment encryption and decryption", "[floe]") {
         size_t segmentLength = ciphertext.size() - offset;
         auto segment = decryptor->processSegment(ciphertext.data(), offset, segmentLength);
         decrypted.insert(decrypted.end(), segment.begin(), segment.end());
-        
-        decryptor->close();
     }
     
     REQUIRE(emptySegment == decrypted);
@@ -256,8 +250,6 @@ TEST_CASE("Large data encryption and decryption", "[floe]") {
             decrypted.insert(decrypted.end(), segment.begin(), segment.end());
             offset += chunkSize;
         }
-        
-        decryptor->close();
     }
     
     REQUIRE(largeData == decrypted);

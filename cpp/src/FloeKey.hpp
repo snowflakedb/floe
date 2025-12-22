@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace floe {
 
 class FloeKey {
 public:
-    explicit FloeKey(const std::vector<uint8_t>& keyData);
+    explicit FloeKey(std::span<const uint8_t> keyData);
     ~FloeKey();
     
     FloeKey(const FloeKey&) = delete;

@@ -28,10 +28,10 @@ public:
     std::vector<uint8_t> processSegment(const std::vector<uint8_t>& ciphertext) override;
     
     [[nodiscard]] bool isClosed() const override;
-    
-    void close() override;
 
 private:
+    void close() override;
+    
     void verifyMinimalSegmentLength(size_t length) const;
     void verifySegmentNotTooLong(size_t length) const;
 
