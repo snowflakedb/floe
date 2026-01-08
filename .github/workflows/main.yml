@@ -87,4 +87,3 @@ jobs:
           files: ./cpp/cmake-build/coverage_filtered.info
           name: cpp-coverage
           fail_ci_if_error: true
-          
