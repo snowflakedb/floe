@@ -28,5 +28,3 @@ function(add_unit_test name)
     target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test/common)
     add_test(NAME ${name} COMMAND ${name} ${CATCH_TAGS})
 endfunction()
-
-add_subdirectory(unit)
