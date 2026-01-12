@@ -22,9 +22,27 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-function(add_unit_test name)
+function(add_floe_test name)
     add_executable(${name} ${ARGN})
     target_link_libraries(${name} PRIVATE Catch2::Catch2WithMain floe)
     target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/test/common)
     add_test(NAME ${name} COMMAND ${name} ${CATCH_TAGS})
 endfunction()
+
+# Test utilities library (shared across tests)
+add_library(test_utils STATIC test_utils.cpp test_utils.hpp)
+target_link_libraries(test_utils PUBLIC floe)
+target_include_directories(test_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Unit tests
+add_floe_test(unit_tests unit_tests.cpp)
+target_link_libraries(unit_tests PRIVATE test_utils)
+
+# KAT tests - known answer tests for cross-implementation compatibility
+add_floe_test(kat_tests kat_tests.cpp)
+target_link_libraries(kat_tests PRIVATE test_utils)
+set_tests_properties(kat_tests PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Bounce tests - encryption/decryption roundtrip tests
+add_floe_test(bounce_tests bounce_tests.cpp)
+target_link_libraries(bounce_tests PRIVATE test_utils)
