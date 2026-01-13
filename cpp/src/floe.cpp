@@ -1,7 +1,6 @@
 #include "../include/floe/floe.hpp"
 
 #include <cstring>
-#include <memory>
 #include <mutex>
 #include <utility>
 
