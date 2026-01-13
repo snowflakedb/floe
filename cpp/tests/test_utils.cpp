@@ -1,12 +1,14 @@
 #include "test_utils.hpp"
 
+#include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <stdexcept>
 
 namespace sf::test {
-auto RAW_AAD = reinterpret_cast<const ub1*>("This is AAD");
+const ub1* RAW_AAD = reinterpret_cast<const ub1*>("This is AAD");
 const std::span<const ub1> AAD(RAW_AAD, strlen(reinterpret_cast<const char*>(RAW_AAD)));
 
 const std::string KAT_BASE = "../../kats/reference/";
