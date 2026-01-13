@@ -1,11 +1,11 @@
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
-    - SNOW-*
+      - main
+      - SNOW-*
 
 concurrency:
   # older builds for the same pull request number or branch should be cancelled
@@ -56,7 +56,7 @@ jobs:
         run: |
           set -xe
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev lcov
+          sudo apt-get install -y build-essential libssl-dev lcov valgrind
           wget https://github.com/Kitware/CMake/releases/download/v4.2.1/cmake-4.2.1-linux-x86_64.sh
           sudo sh cmake-4.2.1-linux-x86_64.sh --skip-license --prefix=/usr/local
           sudo rm cmake-4.2.1-linux-x86_64.sh
@@ -66,12 +66,19 @@ jobs:
         shell: bash
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -B cmake-build
-          cmake --build cmake-build -- -j $(nproc)
+          cmake --build cmake-build -- -j
       - name: Run tests and generate coverage
         working-directory: ./cpp
         shell: bash
         run: |
-          cmake --build cmake-build --target coverage -- -j $(nproc)
+          cmake --build cmake-build --target coverage -- -j
+      - name: Check for memory leaks with valgrind
+        working-directory: ./cpp
+        shell: bash
+        run: |
+          valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 \
+            --errors-for-leak-kinds=definite,indirect,possible \
+            ctest --test-dir cmake-build --output-on-failure
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         env:
