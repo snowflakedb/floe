@@ -153,7 +153,7 @@ const char* floeErrorMessage(FloeResult errorCode) {
     FLOE_ERROR_CASE(FloeResult::NotInitialized);
     FLOE_ERROR_CASE(FloeResult::AlreadyInitialized);
     FLOE_ERROR_CASE(FloeResult::InvalidInput);
-    FLOE_ERROR_CASE(FloeResult::OsslError);
+    FLOE_ERROR_CASE(FloeResult::Dependency);
     default:
       return "Undefined error";
   }
@@ -430,12 +430,12 @@ std::pair<FloeResult, std::unique_ptr<FloeKey>> FloeKey::derive(
 
   // Validate requested length fits in our buffer and hash output
   if (len > getHashLength(params->getHash())) {
-    return {FloeResult::InvalidInput, nullptr};
+    return {FloeResult::Unexpected, nullptr};
   }
 
   EVP_MAC_CTX* ctx = EVP_MAC_CTX_new(m_state->m_mac);
   if (ctx == nullptr) {
-    return {FloeResult::OsslError, nullptr};
+    return {FloeResult::Dependency, nullptr};
   }
 
   constexpr ub1 oneByte = 1;
@@ -443,7 +443,7 @@ std::pair<FloeResult, std::unique_ptr<FloeKey>> FloeKey::derive(
   // Initialize MAC with key
   if (!EVP_MAC_init(ctx, m_state->m_key.data(), m_state->m_key.size(), m_state->m_macParams)) {
     EVP_MAC_CTX_free(ctx);
-    return {FloeResult::OsslError, nullptr};
+    return {FloeResult::Dependency, nullptr};
   }
 
   // Update MAC with all inputs
@@ -453,17 +453,21 @@ std::pair<FloeResult, std::unique_ptr<FloeKey>> FloeKey::derive(
       !EVP_MAC_update(ctx, aad.data(), aad.size()) ||
       !EVP_MAC_update(ctx, &oneByte, 1)) {
     EVP_MAC_CTX_free(ctx);
-    return {FloeResult::OsslError, nullptr};
+    return {FloeResult::Dependency, nullptr};
   }
 
   // Finalize MAC
   unsigned char buf[48] = {0};  // big enough for now
-  static_assert(sizeof(buf) >= 48, "Buffer must be large enough for SHA-384");
+  // ReSharper disable once CppDFAConstantConditions
+  if (sizeof(buf) < getHashLength(params->getHash())) {
+    EVP_MAC_CTX_free(ctx);
+    return {FloeResult::Unexpected, nullptr};
+  }
   size_t out_len = 0;
   if (!EVP_MAC_final(ctx, buf, &out_len, sizeof(buf))) {
     EVP_MAC_CTX_free(ctx);
     OPENSSL_cleanse(buf, sizeof(buf));
-    return {FloeResult::OsslError, nullptr};
+    return {FloeResult::Dependency, nullptr};
   }
 
   EVP_MAC_CTX_free(ctx);

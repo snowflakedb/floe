@@ -26,7 +26,7 @@ enum class FloeResult {
   NotInitialized,
   AlreadyInitialized,
   InvalidInput,
-  OsslError
+  Dependency
 };
 
 const char* floeErrorMessage(FloeResult errorCode);
