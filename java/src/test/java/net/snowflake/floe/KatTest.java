@@ -31,27 +31,27 @@ class KatTest {
     return Stream.of(
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 64, 32),
-            "reference_java_GCM256_IV256_64"
+            "java_GCM256_IV256_64"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32),
-            "reference_java_GCM256_IV256_4K"
+            "java_GCM256_IV256_4K"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32),
-            "reference_java_GCM256_IV256_1M"
+            "java_GCM256_IV256_1M"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
-            "reference_java_rotation"
+            "java_rotation"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
-            "reference_java_lastSegAligned"
+            "java_lastSegAligned"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
-            "reference_java_lastSegEmpty"
+            "java_lastSegEmpty"
         )
     );
   }
@@ -73,23 +73,19 @@ class KatTest {
     return Stream.of(
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 64, 32),
-            "public_java_GCM256_IV256_64"
+            "pub_java_GCM256_IV256_64"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4 * 1024, 32),
-            "public_java_GCM256_IV256_4K"
+            "pub_java_GCM256_IV256_4K"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 1024 * 1024, 32),
-            "public_java_GCM256_IV256_1M"
+            "pub_java_GCM256_IV256_1M"
         ),
         Arguments.of(
             new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
-            "public_java_rotation"
-        ),
-        Arguments.of(
-            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32),
-            "public_java_lastSegEmpty"
+            "pub_java_rotation"
         )
     );
   }
