@@ -9,7 +9,7 @@ namespace sf::test {
 auto RAW_AAD = reinterpret_cast<const ub1*>("This is AAD");
 const std::span<const ub1> AAD(RAW_AAD, strlen(reinterpret_cast<const char*>(RAW_AAD)));
 
-const std::string KAT_BASE = "kats/reference/";
+const std::string KAT_BASE = "../../kats/reference/";
 
 FloeResult decryptKat(const FloeParameterSpec &param,
                       const std::span<const ub1>& ct, std::vector<ub1>& out) {
