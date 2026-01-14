@@ -103,10 +103,8 @@ for (size_t offset = 0; offset < plaintext.size();
   } else {
     // Full segment
     segment.resize(params.getEncryptedSegmentLength());
-    std::span<ub1> outputSpan(segment);
-
     result = encryptor->processSegment(
-        plaintext.subspan(offset, params.getPlaintextSegmentLength()), outputSpan);
+        plaintext.subspan(offset, params.getPlaintextSegmentLength()), segment);
   }
 
   if (result != FloeResult::Success) {
