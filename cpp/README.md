@@ -139,9 +139,7 @@ for (size_t offset = params.getHeaderLength(); offset < ciphertext.size();
     // Final segment may be shorter
     size_t lastSegmentSize = ciphertext.size() - offset;
     plaintext.resize(decryptor->sizeOfLastOutput(lastSegmentSize));
-    std::span<ub1> outputSpan(plaintext);
-
-    result = decryptor->processLastSegment(ciphertext.subspan(offset), outputSpan);
+    result = decryptor->processLastSegment(ciphertext.subspan(offset), plaintext);
   } else {
     // Full segment
     plaintext.resize(params.getPlaintextSegmentLength());
