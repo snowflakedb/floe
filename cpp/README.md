@@ -143,10 +143,8 @@ for (size_t offset = params.getHeaderLength(); offset < ciphertext.size();
   } else {
     // Full segment
     plaintext.resize(params.getPlaintextSegmentLength());
-    std::span<ub1> outputSpan(plaintext);
-
     result = decryptor->processSegment(
-        ciphertext.subspan(offset, params.getEncryptedSegmentLength()), outputSpan);
+        ciphertext.subspan(offset, params.getEncryptedSegmentLength()), plaintext);
   }
 
   if (result != FloeResult::Success) {
