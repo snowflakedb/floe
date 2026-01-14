@@ -225,6 +225,40 @@ The library provides a public include directory that should be distributed with 
     └── libfloe.a       # Built static library
 ```
 
+## Tools
+
+### KAT Generator
+
+The project includes a tool for generating Known Answer Tests (KATs) for cross-implementation testing. Use the provided script to build and run it:
+
+```bash
+bash scripts/generate_kats.sh
+```
+
+This will:
+1. Configure CMake with `BUILD_KATS=ON`
+2. Build the KAT generator
+3. Output KAT files to `cpp/kats/`
+
+Alternatively, build and run manually:
+
+```bash
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_KATS=ON -DBUILD_TESTING=OFF -B cmake-build-kats
+cmake --build cmake-build-kats --target create_kats
+./cmake-build-kats/kats_generator/create_kats /path/to/output/directory
+```
+
+This generates pairs of files for each parameter specification:
+- `<name>_pt.txt` – Hex-encoded plaintext
+- `<name>_ct.txt` – Hex-encoded ciphertext (header + encrypted segments)
+
+Generated KATs:
+- `cpp_GCM256_IV256_4K` – 4 KB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_1M` – 1 MB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_5M` – 5 MB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_64` – 64-byte segments (edge case)
+- `cpp_rotation` – Key rotation testing
+
 ## Testing
 
 ### Running Tests
