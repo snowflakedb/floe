@@ -59,9 +59,6 @@ FloeParameterSpec params = FloeParameterSpec::GCM256_IV256_4K();
 
 // Create the key object
 FloeKey key(rawKey, params);
-if (!key.isValid()) {
-  // Handle invalid key
-}
 ```
 
 ### Encryption
@@ -164,10 +161,10 @@ if (result != FloeResult::Success) {
 
 ### Parameter Specifications
 
-| Specification | Segment Size | Use Case |
-|---------------|--------------|----------|
-| `GCM256_IV256_4K()` | 4 KB | General purpose, good for most files |
-| `GCM256_IV256_1M()` | 1 MB | Large files, fewer segments |
+| Specification | Segment Size | Use Case                                                 |
+|---------------|--------------|----------------------------------------------------------|
+| `GCM256_IV256_4K()` | 4 KB | Small segments, good for memory constrained environments. |
+| `GCM256_IV256_1M()` | 1 MB | General purpose, good for most files                     |
 
 ### Error Handling
 
