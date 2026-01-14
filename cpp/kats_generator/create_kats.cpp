@@ -39,10 +39,10 @@ FloeResult encryptKat(const FloeParameterSpec& param, const size_t segCount, std
   // Generate plaintext: segCount full segments + 3 extra bytes
   pt.resize((segCount * param.getPlaintextSegmentLength()) + 3, 0);
 
-  // Fill with deterministic "random" data using fixed seed
+ // Fill with pseudo-random data (ciphertext will differ each run due to random IV)
   static std::uniform_int_distribution<int> distribution(std::numeric_limits<int>::min(),
                                                          std::numeric_limits<int>::max());
-  static std::default_random_engine generator(42); // Fixed seed for reproducibility
+  static std::default_random_engine generator(42);
 
   std::ranges::generate(pt, []() { return static_cast<ub1>(distribution(generator)); });
   const std::span<const ub1> ptSpan(pt);
