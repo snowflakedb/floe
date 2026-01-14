@@ -50,8 +50,8 @@ public:
   static FloeParameterSpec GCM256_IV256_4K() noexcept;
   // FLOE with AES-GCM-256, a 256-bit FLOE IV, and 1 megabyte encrypted segments
   static FloeParameterSpec GCM256_IV256_1M() noexcept;
-  // FLOE with AES-GCM-256, a 256-bit FLOE IV, and 5 megabyte encrypted segments
-  static FloeParameterSpec GCM256_IV256_5M() noexcept;
+  // FLOE with AES-GCM-256, a 256-bit FLOE IV, and 16 megabyte encrypted segments
+  static FloeParameterSpec GCM256_IV256_16M() noexcept;
 
   // This is the constructor everyone should use
   FloeParameterSpec(FloeAead aead, FloeHash hash, ub4 segmentLength);

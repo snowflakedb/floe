@@ -188,8 +188,8 @@ FloeParameterSpec FloeParameterSpec::GCM256_IV256_1M() noexcept {
   return {FloeAead::AES_256_GCM, FloeHash::SHA_384, 1024 * 1024};
 }
 
-FloeParameterSpec FloeParameterSpec::GCM256_IV256_5M() noexcept {
-  return {FloeAead::AES_256_GCM, FloeHash::SHA_384, 5 * 1024 * 1024};
+FloeParameterSpec FloeParameterSpec::GCM256_IV256_16M() noexcept {
+  return {FloeAead::AES_256_GCM, FloeHash::SHA_384, 16 * 1024 * 1024};
 }
 
 FloeParameterSpec::FloeParameterSpec()
