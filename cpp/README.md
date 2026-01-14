@@ -97,9 +97,7 @@ for (size_t offset = 0; offset < plaintext.size();
     // Final segment (may be shorter than a full segment)
     size_t lastSegmentSize = plaintext.size() - offset;
     segment.resize(encryptor->sizeOfLastOutput(lastSegmentSize));
-    std::span<ub1> outputSpan(segment);
-
-    result = encryptor->processLastSegment(plaintext.subspan(offset), outputSpan);
+    result = encryptor->processLastSegment(plaintext.subspan(offset), segment);
   } else {
     // Full segment
     segment.resize(params.getEncryptedSegmentLength());
