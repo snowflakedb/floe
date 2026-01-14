@@ -33,8 +33,8 @@ TEST_CASE("Bounce: GCM256_IV256_1M", "[bounce][1M]") {
   testBounce(FloeParameterSpec::GCM256_IV256_1M(), 2);
 }
 
-TEST_CASE("Bounce: GCM256_IV256_5M", "[bounce][5M]") {
-  testBounce(FloeParameterSpec::GCM256_IV256_5M(), 2);
+TEST_CASE("Bounce: GCM256_IV256_16M", "[bounce][16M]") {
+  testBounce(FloeParameterSpec::GCM256_IV256_16M(), 2);
 }
 
 TEST_CASE("Bounce: GCM256_IV256_4K", "[bounce][4K]") {

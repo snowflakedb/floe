@@ -161,11 +161,11 @@ if (result != FloeResult::Success) {
 
 ### Parameter Specifications
 
-| Specification       | Segment Size | Use Case                                                  |
-|---------------------|--------------|-----------------------------------------------------------|
-| `GCM256_IV256_4K()` | 4 KB         | Small segments, good for memory constrained environments. |
-| `GCM256_IV256_1M()` | 1 MB         | General purpose, good for most files                      |
-| `GCM256_IV256_5M()` | 5 MB         | Very large files, minimal segment overhead                |
+| Specification        | Segment Size | Use Case                                                       |
+|----------------------|--------------|----------------------------------------------------------------|
+| `GCM256_IV256_4K()`  | 4 KB         | Small segments, good for memory constrained environments       |
+| `GCM256_IV256_1M()`  | 1 MB         | General purpose, good for most files                           |
+| `GCM256_IV256_16M()` | 16 MB        | Large files or those being uploaded to cloud storage providers |
 
 ### Error Handling
 
