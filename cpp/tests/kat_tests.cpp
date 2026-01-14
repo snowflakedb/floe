@@ -8,9 +8,10 @@ using namespace sf::test;
 
 namespace {
 
-void testKat(const std::string& testName, const FloeParameterSpec& param) {
-  auto ct = fromHexFile(KAT_BASE + testName + "_ct.txt");
-  auto pt = fromHexFile(KAT_BASE + testName + "_pt.txt");
+void testKat(const std::string& basePath, const std::string& testName,
+             const FloeParameterSpec& param) {
+  auto ct = fromHexFile(basePath + testName + "_ct.txt");
+  auto pt = fromHexFile(basePath + testName + "_pt.txt");
 
   REQUIRE_FALSE(ct.empty());
   REQUIRE_FALSE(pt.empty());
@@ -22,6 +23,14 @@ void testKat(const std::string& testName, const FloeParameterSpec& param) {
 
   REQUIRE(result == FloeResult::Success);
   REQUIRE(decrypted == pt);
+}
+
+void testKat(const std::string& testName, const FloeParameterSpec& param) {
+  testKat(KAT_BASE, testName, param);
+}
+
+void testLocalKat(const std::string& testName, const FloeParameterSpec& param) {
+  testKat(LOCAL_KAT_BASE, testName, param);
 }
 
 const auto smallSegment = FloeParameterSpec(FloeAead::AES_256_GCM, FloeHash::SHA_384, 64);
@@ -122,4 +131,25 @@ TEST_CASE("KAT: java_lastSegAligned", "[kat][java][segment]") {
 
 TEST_CASE("KAT: java_lastSegEmpty", "[kat][java][segment]") {
   testKat("java_lastSegEmpty", segmentTestParams);
+}
+
+// Locally generated KATs (from cpp/kats/)
+TEST_CASE("Local KAT: cpp_GCM256_IV256_4K", "[kat][local][4K]") {
+  testLocalKat("cpp_GCM256_IV256_4K", FloeParameterSpec::GCM256_IV256_4K());
+}
+
+TEST_CASE("Local KAT: cpp_GCM256_IV256_1M", "[kat][local][1M]") {
+  testLocalKat("cpp_GCM256_IV256_1M", FloeParameterSpec::GCM256_IV256_1M());
+}
+
+TEST_CASE("Local KAT: cpp_GCM256_IV256_5M", "[kat][local][5M]") {
+  testLocalKat("cpp_GCM256_IV256_5M", FloeParameterSpec::GCM256_IV256_5M());
+}
+
+TEST_CASE("Local KAT: cpp_GCM256_IV256_64", "[kat][local][64B]") {
+  testLocalKat("cpp_GCM256_IV256_64", smallSegment);
+}
+
+TEST_CASE("Local KAT: cpp_rotation", "[kat][local][rotation]") {
+  testLocalKat("cpp_rotation", rotation);
 }
