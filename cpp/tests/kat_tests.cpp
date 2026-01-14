@@ -142,8 +142,8 @@ TEST_CASE("Local KAT: cpp_GCM256_IV256_1M", "[kat][local][1M]") {
   testLocalKat("cpp_GCM256_IV256_1M", FloeParameterSpec::GCM256_IV256_1M());
 }
 
-TEST_CASE("Local KAT: cpp_GCM256_IV256_5M", "[kat][local][5M]") {
-  testLocalKat("cpp_GCM256_IV256_5M", FloeParameterSpec::GCM256_IV256_5M());
+TEST_CASE("Local KAT: cpp_GCM256_IV256_16M", "[kat][local][16M]") {
+  testLocalKat("cpp_GCM256_IV256_16M", FloeParameterSpec::GCM256_IV256_16M());
 }
 
 TEST_CASE("Local KAT: cpp_GCM256_IV256_64", "[kat][local][64B]") {

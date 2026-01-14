@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
   if (!writeKat("cpp_GCM256_IV256_1M", FloeParameterSpec::GCM256_IV256_1M(), 2, baseDir)) {
     failures++;
   }
-  if (!writeKat("cpp_GCM256_IV256_5M", FloeParameterSpec::GCM256_IV256_5M(), 2, baseDir)) {
+  if (!writeKat("cpp_GCM256_IV256_16M", FloeParameterSpec::GCM256_IV256_16M(), 2, baseDir)) {
     failures++;
   }
 

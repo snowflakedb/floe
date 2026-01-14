@@ -255,7 +255,7 @@ This generates pairs of files for each parameter specification:
 Generated KATs:
 - `cpp_GCM256_IV256_4K` – 4 KB segments, 2 full segments + partial
 - `cpp_GCM256_IV256_1M` – 1 MB segments, 2 full segments + partial
-- `cpp_GCM256_IV256_5M` – 5 MB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_16M` – 16 MB segments, 2 full segments + partial
 - `cpp_GCM256_IV256_64` – 64-byte segments (edge case)
 - `cpp_rotation` – Key rotation testing
 
