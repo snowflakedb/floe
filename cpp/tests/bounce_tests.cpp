@@ -11,23 +11,23 @@ namespace {
 void testBounce(const FloeParameterSpec& params, const size_t segCount) {
   std::vector<ub1> plaintext;
   std::vector<ub1> ciphertext;
-  
+
   const auto encResult = encryptKat(params, segCount, plaintext, ciphertext);
   REQUIRE(encResult == FloeResult::Success);
-  
+
   std::vector<ub1> decrypted;
   const std::span<const ub1> ctSpan(ciphertext);
-  
+
   const auto decResult = decryptKat(params, ctSpan, decrypted);
   REQUIRE(decResult == FloeResult::Success);
-  
+
   REQUIRE(decrypted == plaintext);
 }
 
 const auto smallSegment = FloeParameterSpec(FloeAead::AES_256_GCM, FloeHash::SHA_384, 64);
 const auto rotation = FloeParameterSpec(FloeAead::AES_256_GCM, FloeHash::SHA_384, 40, -4);
 
-}  // namespace
+} // namespace
 
 TEST_CASE("Bounce: GCM256_IV256_1M", "[bounce][1M]") {
   testBounce(FloeParameterSpec::GCM256_IV256_1M(), 2);

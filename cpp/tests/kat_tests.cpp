@@ -11,15 +11,15 @@ namespace {
 void testKat(const std::string& testName, const FloeParameterSpec& param) {
   auto ct = fromHexFile(KAT_BASE + testName + "_ct.txt");
   auto pt = fromHexFile(KAT_BASE + testName + "_pt.txt");
-  
+
   REQUIRE_FALSE(ct.empty());
   REQUIRE_FALSE(pt.empty());
-  
+
   std::vector<ub1> decrypted;
   std::span<const ub1> ctSpan(ct);
-  
+
   auto result = decryptKat(param, ctSpan, decrypted);
-  
+
   REQUIRE(result == FloeResult::Success);
   REQUIRE(decrypted == pt);
 }
@@ -28,7 +28,7 @@ const auto smallSegment = FloeParameterSpec(FloeAead::AES_256_GCM, FloeHash::SHA
 const auto rotation = FloeParameterSpec(FloeAead::AES_256_GCM, FloeHash::SHA_384, 40, -4);
 const auto segmentTestParams = FloeParameterSpec(FloeAead::AES_256_GCM, FloeHash::SHA_384, 40);
 
-}  // namespace
+} // namespace
 
 // Java-generated KATs
 TEST_CASE("KAT: java_GCM256_IV256_1M", "[kat][java][1M]") {

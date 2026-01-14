@@ -13,8 +13,8 @@ const std::span<const ub1> AAD(RAW_AAD, strlen(reinterpret_cast<const char*>(RAW
 
 const std::string KAT_BASE = "../../kats/reference/";
 
-FloeResult decryptKat(const FloeParameterSpec &param,
-                      const std::span<const ub1>& ct, std::vector<ub1>& out) {
+FloeResult decryptKat(const FloeParameterSpec& param, const std::span<const ub1>& ct,
+                      std::vector<ub1>& out) {
   std::vector<ub1> rawKey;
   rawKey.resize(32, 0);
   const auto key = FloeKey(rawKey, param);
@@ -33,7 +33,8 @@ FloeResult decryptKat(const FloeParameterSpec &param,
       const auto lastCtSegmentSize = ct.size() - offset;
       segment.resize(decryptor->sizeOfLastOutput(lastCtSegmentSize), 0);
       std::span<ub1> segmentSpan(segment);
-      if (const auto segResult = decryptor->processLastSegment(ct.subspan(offset), segmentSpan); segResult != FloeResult::Success) {
+      if (const auto segResult = decryptor->processLastSegment(ct.subspan(offset), segmentSpan);
+          segResult != FloeResult::Success) {
         return segResult;
       }
     } else {
@@ -52,12 +53,12 @@ FloeResult decryptKat(const FloeParameterSpec &param,
   return decryptor->finish();
 }
 
-FloeResult encryptKat(const FloeParameterSpec &param, const size_t segCount,
-                      std::vector<ub1>& pt, std::vector<ub1>& ct) {
+FloeResult encryptKat(const FloeParameterSpec& param, const size_t segCount, std::vector<ub1>& pt,
+                      std::vector<ub1>& ct) {
   std::vector<ub1> rawKey;
   rawKey.resize(32, 0);
   const auto key = FloeKey(rawKey, param);
-  pt.resize(segCount * param.getPlaintextSegmentLength() + 3, 0);
+  pt.resize((segCount * param.getPlaintextSegmentLength()) + 3, 0);
 
   static std::uniform_int_distribution<int> distribution(std::numeric_limits<int>::min(),
                                                          std::numeric_limits<int>::max());
@@ -70,10 +71,10 @@ FloeResult encryptKat(const FloeParameterSpec &param, const size_t segCount,
   if (result != FloeResult::Success) {
     return result;
   }
-  
+
   auto header = encryptor->getHeader();
   ct.insert(ct.end(), header.begin(), header.end());
-  
+
   for (size_t offset = 0; offset < pt.size(); offset += param.getPlaintextSegmentLength()) {
     std::vector<ub1> segment;
     if (offset + param.getPlaintextSegmentLength() >= pt.size()) {
@@ -88,7 +89,8 @@ FloeResult encryptKat(const FloeParameterSpec &param, const size_t segCount,
       segment.resize(param.getEncryptedSegmentLength(), 0);
       std::span<ub1> segmentSpan(segment);
 
-      if (const auto segResult = encryptor->processSegment(ptSpan.subspan(offset, param.getPlaintextSegmentLength()), segmentSpan);
+      if (const auto segResult = encryptor->processSegment(
+              ptSpan.subspan(offset, param.getPlaintextSegmentLength()), segmentSpan);
           segResult != FloeResult::Success) {
         return segResult;
       }
@@ -114,13 +116,17 @@ static int hexValue(const unsigned char hex_digit) {
       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   };
   const signed char svalue = hex_values[hex_digit];
-  if (svalue == -1) throw std::invalid_argument("invalid hex digit");
+  if (svalue == -1) {
+    throw std::invalid_argument("invalid hex digit");
+  }
   return static_cast<int>(static_cast<unsigned char>(svalue));
 }
 
 std::vector<ub1> hexToBytes(const std::string& input) {
   const auto len = input.length();
-  if (len & 1) throw std::invalid_argument("odd length");
+  if (len & 1) {
+    throw std::invalid_argument("odd length");
+  }
 
   std::vector<ub1> output;
   output.reserve(len / 2);
@@ -153,7 +159,7 @@ std::vector<ub1> fromHexFile(const std::string& fileName) {
   std::vector<ub1> result;
   auto stream = std::ifstream(fileName.data());
   if (!stream.is_open()) {
-    std::cerr << "Unable to open file: " << fileName << std::endl;
+    std::cerr << "Unable to open file: " << fileName << '\n';
     return result;
   }
   std::string buf(2, '\0');
@@ -167,4 +173,4 @@ std::vector<ub1> fromHexFile(const std::string& fileName) {
   return result;
 }
 
-}  // namespace sf::test
+} // namespace sf::test

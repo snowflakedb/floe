@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
-#include <floe/floe.hpp>
 #include <cstring>
+#include <floe/floe.hpp>
 
 #include "test_utils.hpp"
 
@@ -26,17 +26,17 @@ std::vector<ub1> getRawKey() {
   return {rawKey, rawKey + 32};
 }
 
-}  // namespace
+} // namespace
 
 TEST_CASE("Decrypt valid header", "[header][decryption]") {
   auto headerRaw = hexToBytes(HEADER_HEX);
   const std::span<const ub1> header(headerRaw);
-  
+
   auto rawKey = getRawKey();
   const FloeKey key(rawKey, PARAMS);
-  
+
   auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
-  
+
   REQUIRE(result == FloeResult::Success);
   REQUIRE(decryptor != nullptr);
 }
@@ -45,7 +45,7 @@ TEST_CASE("Long key is invalid", "[key][validation]") {
   static constexpr ub1 rawLong[33] = {0};
   constexpr std::span<const ub1> keySpan(rawLong, 33);
   const FloeKey longKey(keySpan, PARAMS);
-  
+
   REQUIRE_FALSE(longKey.isValid());
 }
 
@@ -53,20 +53,20 @@ TEST_CASE("Header with bad params fails", "[header][validation]") {
   auto headerRaw = hexToBytes(HEADER_HEX);
   auto rawKey = getRawKey();
   FloeKey key(rawKey, PARAMS);
-  
+
   // First 10 bytes are the parameter encoding
   for (int x = 0; x < 10; x++) {
     headerRaw[x] ^= 0x01;
     std::span<const ub1> header(headerRaw);
-    
+
     auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
-    
+
     REQUIRE(result == FloeResult::BadHeader);
     REQUIRE(decryptor == nullptr);
-    
-    headerRaw[x] ^= 0x01;  // Restore
+
+    headerRaw[x] ^= 0x01; // Restore
   }
-  
+
   // Verify unmodified header still works
   std::span<const ub1> header(headerRaw);
   auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
@@ -78,31 +78,31 @@ TEST_CASE("Header with bad IV or tag fails", "[header][validation]") {
   auto headerRaw = hexToBytes(HEADER_HEX);
   auto rawKey = getRawKey();
   const FloeKey key(rawKey, PARAMS);
-  
+
   // Bytes after first 10 are IV and tag
   for (size_t x = 10; x < headerRaw.size(); x++) {
     headerRaw[x] ^= 0x01;
     std::span<const ub1> header(headerRaw);
-    
+
     auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
-    
+
     REQUIRE(result == FloeResult::BadTag);
     REQUIRE(decryptor == nullptr);
-    
-    headerRaw[x] ^= 0x01;  // Restore
+
+    headerRaw[x] ^= 0x01; // Restore
   }
 }
 
 TEST_CASE("Header alone counts as truncated", "[header][truncation]") {
   auto headerRaw = hexToBytes(HEADER_HEX);
   const std::span<const ub1> header(headerRaw);
-  
+
   auto rawKey = getRawKey();
   const FloeKey key(rawKey, PARAMS);
-  
+
   auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
   REQUIRE(result == FloeResult::Success);
-  
+
   REQUIRE(decryptor->finish() == FloeResult::Truncated);
   REQUIRE_FALSE(decryptor->isClosed());
 }
@@ -112,17 +112,17 @@ TEST_CASE("Missing final segment is truncated", "[segment][truncation]") {
   auto segment1Raw = hexToBytes(SEGMENT1_HEX);
   std::span<const ub1> header(headerRaw);
   std::span<const ub1> segment1(segment1Raw);
-  
+
   auto rawKey = getRawKey();
   FloeKey key(rawKey, PARAMS);
-  
+
   auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
   REQUIRE(result == FloeResult::Success);
-  
+
   std::vector<ub1> outVec;
   outVec.resize(key.getParameterSpec().getPlaintextSegmentLength(), 0);
   std::span<ub1> out(outVec);
-  
+
   REQUIRE(decryptor->processSegment(segment1, out) == FloeResult::Success);
   REQUIRE(decryptor->finish() == FloeResult::Truncated);
   REQUIRE_FALSE(decryptor->isClosed());
@@ -132,29 +132,29 @@ TEST_CASE("Corrupted inner segment fails", "[segment][corruption]") {
   auto headerRaw = hexToBytes(HEADER_HEX);
   auto segment1Raw = hexToBytes(SEGMENT1_HEX);
   std::span<const ub1> header(headerRaw);
-  
+
   auto rawKey = getRawKey();
   FloeKey key(rawKey, PARAMS);
-  
+
   auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
   REQUIRE(result == FloeResult::Success);
-  
+
   std::vector<ub1> outVec;
   outVec.resize(key.getParameterSpec().getPlaintextSegmentLength(), 0);
   std::span<ub1> out(outVec);
-  
+
   // First four bytes are special as they are the non-terminal indicator
   std::vector<ub1> localSegment = segment1Raw;
   for (size_t x = 0; x < localSegment.size(); x++) {
     localSegment[x] ^= 0x01;
     std::span<const ub1> seg(localSegment);
-    
+
     FloeResult expectedError = x < 4 ? FloeResult::MalformedSegment : FloeResult::BadTag;
     REQUIRE(decryptor->processSegment(seg, out) == expectedError);
-    
-    localSegment[x] ^= 0x01;  // Restore
+
+    localSegment[x] ^= 0x01; // Restore
   }
-  
+
   // Verify we didn't break anything - unmodified segment should work
   std::span<const ub1> segment1(segment1Raw);
   REQUIRE(decryptor->processSegment(segment1, out) == FloeResult::Success);
@@ -168,33 +168,33 @@ TEST_CASE("Corrupted final segment fails", "[segment][corruption]") {
   std::span<const ub1> header(headerRaw);
   std::span<const ub1> segment1(segment1Raw);
   std::span<const ub1> segment2(segment2Raw);
-  
+
   auto rawKey = getRawKey();
   FloeKey key(rawKey, PARAMS);
-  
+
   auto [result, decryptor] = FloeDecryptor::create(key, AAD, header);
   REQUIRE(result == FloeResult::Success);
-  
+
   std::vector<ub1> outVec;
   outVec.resize(key.getParameterSpec().getPlaintextSegmentLength(), 0);
   std::span<ub1> out(outVec);
-  
+
   REQUIRE(decryptor->processSegment(segment1, out) == FloeResult::Success);
   REQUIRE(decryptor->processSegment(segment2, out) == FloeResult::Success);
-  
+
   std::vector<ub1> localSegment = segment3Raw;
-  
+
   // First four bytes are special as they are the length indicator
   for (size_t x = 0; x < localSegment.size(); x++) {
     localSegment[x] ^= 0x01;
     std::span<const ub1> seg(localSegment);
-    
+
     FloeResult expectedError = x < 4 ? FloeResult::MalformedSegment : FloeResult::BadTag;
     REQUIRE(decryptor->processLastSegment(seg, out) == expectedError);
-    
-    localSegment[x] ^= 0x01;  // Restore
+
+    localSegment[x] ^= 0x01; // Restore
   }
-  
+
   // Verify unmodified segment works
   std::span<const ub1> segment3(segment3Raw);
   REQUIRE(decryptor->processLastSegment(segment3, out) == FloeResult::Success);
@@ -203,38 +203,38 @@ TEST_CASE("Corrupted final segment fails", "[segment][corruption]") {
 TEST_CASE("Cannot use after close", "[lifecycle]") {
   auto rawKey = getRawKey();
   FloeKey key(rawKey, PARAMS);
-  
+
   auto [eResult, encryptor] = FloeEncryptor::create(key, AAD);
   REQUIRE(eResult == FloeResult::Success);
-  
+
   auto header = encryptor->getHeader();
   std::vector<ub1> scratch;
   scratch.resize(PARAMS.getEncryptedSegmentLength(), 0);
   std::span<ub1> scratchSpan(scratch);
-  
+
   std::vector<ub1> segment;
   segment.resize(encryptor->sizeOfLastOutput(0));
   std::span<ub1> segmentSpan(segment);
   std::span<const ub1> empty;
-  
+
   REQUIRE(encryptor->processLastSegment(empty, segmentSpan) == FloeResult::Success);
   REQUIRE(encryptor->isClosed());
-  
+
   // After close, operations should fail
   std::vector<ub1> ptBuf(PARAMS.getPlaintextSegmentLength(), 0);
   std::span<const ub1> ptSpan(ptBuf);
   REQUIRE(encryptor->processSegment(ptSpan, scratchSpan) == FloeResult::Closed);
   REQUIRE(encryptor->processLastSegment(empty, scratchSpan) == FloeResult::Closed);
-  
+
   // Test decryptor as well
   auto [dResult, decryptor] = FloeDecryptor::create(key, AAD, header);
   REQUIRE(dResult == FloeResult::Success);
-  
+
   // Also verifies that we can decrypt empty plaintext
   std::span<ub1> emptyOut;
   REQUIRE(decryptor->processLastSegment(segment, emptyOut) == FloeResult::Success);
   REQUIRE(decryptor->isClosed());
-  
+
   REQUIRE(decryptor->processSegment(scratchSpan, scratchSpan) == FloeResult::Closed);
   REQUIRE(decryptor->processLastSegment(segment, scratchSpan) == FloeResult::Closed);
 }
