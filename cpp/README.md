@@ -33,6 +33,178 @@ sudo apt-get update
 sudo apt-get install cmake g++ libssl-dev clang-tidy lcov
 ```
 
+## Usage
+
+### Include the Header
+
+```cpp
+#include <floe/floe.hpp>
+```
+
+### Create a Key
+
+```cpp
+#include <floe/floe.hpp>
+#include <vector>
+#include <span>
+
+using namespace sf;
+
+// Your 32-byte key (in production, use a secure key derivation function)
+std::vector<ub1> rawKey(32);
+// ... populate rawKey with secure random bytes ...
+
+// Choose a parameter spec
+FloeParameterSpec params = FloeParameterSpec::GCM256_IV256_4K();
+
+// Create the key object
+FloeKey key(rawKey, params);
+if (!key.isValid()) {
+  // Handle invalid key
+}
+```
+
+### Encryption
+
+```cpp
+// Optional additional authenticated data (AAD)
+std::vector<ub1> aad = {'m', 'e', 't', 'a', 'd', 'a', 't', 'a'};
+std::span<const ub1> aadSpan(aad);
+
+// Create encryptor
+auto [result, encryptor] = FloeEncryptor::create(key, aadSpan);
+if (result != FloeResult::Success) {
+  std::cerr << "Error: " << floeErrorMessage(result) << std::endl;
+  return;
+}
+
+// Get the header (must be stored/transmitted with the ciphertext)
+auto header = encryptor->getHeader();
+
+// Build ciphertext: header || encrypted segments
+std::vector<ub1> ciphertext;
+ciphertext.insert(ciphertext.end(), header.begin(), header.end());
+
+// Encrypt data in segments
+std::span<const ub1> plaintext(plaintextData);
+for (size_t offset = 0; offset < plaintext.size();
+     offset += params.getPlaintextSegmentLength()) {
+
+  std::vector<ub1> segment;
+  bool isLastSegment = (offset + params.getPlaintextSegmentLength() >= plaintext.size());
+
+  if (isLastSegment) {
+    // Final segment (may be shorter than a full segment)
+    size_t lastSegmentSize = plaintext.size() - offset;
+    segment.resize(encryptor->sizeOfLastOutput(lastSegmentSize));
+    std::span<ub1> outputSpan(segment);
+
+    result = encryptor->processLastSegment(plaintext.subspan(offset), outputSpan);
+  } else {
+    // Full segment
+    segment.resize(params.getEncryptedSegmentLength());
+    std::span<ub1> outputSpan(segment);
+
+    result = encryptor->processSegment(
+        plaintext.subspan(offset, params.getPlaintextSegmentLength()), outputSpan);
+  }
+
+  if (result != FloeResult::Success) {
+    std::cerr << "Encryption error: " << floeErrorMessage(result) << std::endl;
+    return;
+  }
+
+  ciphertext.insert(ciphertext.end(), segment.begin(), segment.end());
+}
+```
+
+### Decryption
+
+```cpp
+// ciphertext contains: header || segment1 || segment2 || ... || lastSegment
+std::span<const ub1> ciphertext(ciphertextData);
+
+// Create decryptor using the header (first part of ciphertext)
+auto [result, decryptor] = FloeDecryptor::create(key, aadSpan, ciphertext);
+if (result != FloeResult::Success) {
+  std::cerr << "Error: " << floeErrorMessage(result) << std::endl;
+  return;
+}
+
+// Decrypt segments
+std::vector<ub1> decrypted;
+for (size_t offset = params.getHeaderLength(); offset < ciphertext.size();
+     offset += params.getEncryptedSegmentLength()) {
+
+  std::vector<ub1> plaintext;
+  bool isLastSegment = (offset + params.getEncryptedSegmentLength() >= ciphertext.size());
+
+  if (isLastSegment) {
+    // Final segment may be shorter
+    size_t lastSegmentSize = ciphertext.size() - offset;
+    plaintext.resize(decryptor->sizeOfLastOutput(lastSegmentSize));
+    std::span<ub1> outputSpan(plaintext);
+
+    result = decryptor->processLastSegment(ciphertext.subspan(offset), outputSpan);
+  } else {
+    // Full segment
+    plaintext.resize(params.getPlaintextSegmentLength());
+    std::span<ub1> outputSpan(plaintext);
+
+    result = decryptor->processSegment(
+        ciphertext.subspan(offset, params.getEncryptedSegmentLength()), outputSpan);
+  }
+
+  if (result != FloeResult::Success) {
+    std::cerr << "Decryption error: " << floeErrorMessage(result) << std::endl;
+    return;
+  }
+
+  decrypted.insert(decrypted.end(), plaintext.begin(), plaintext.end());
+}
+
+// Verify decryption completed successfully
+result = decryptor->finish();
+if (result != FloeResult::Success) {
+  std::cerr << "Truncated ciphertext!" << std::endl;
+}
+```
+
+### Parameter Specifications
+
+| Specification | Segment Size | Use Case |
+|---------------|--------------|----------|
+| `GCM256_IV256_4K()` | 4 KB | General purpose, good for most files |
+| `GCM256_IV256_1M()` | 1 MB | Large files, fewer segments |
+
+### Error Handling
+
+All operations return `FloeResult`. Use `floeErrorMessage()` for human-readable errors:
+
+```cpp
+if (result != FloeResult::Success) {
+  std::cerr << floeErrorMessage(result) << std::endl;
+}
+```
+
+Error codes:
+
+| Code | Description |
+|------|-------------|
+| `Success` | Operation completed successfully |
+| `Unexpected` | An unexpected internal error occurred |
+| `BadHeader` | Header validation failed (wrong parameters or corrupted) |
+| `BadTag` | Authentication tag verification failed (data tampered or wrong key) |
+| `Truncated` | Ciphertext was incomplete (missing final segment) |
+| `Closed` | Cryptor has already been closed |
+| `DataOverflow` | Output buffer too small for the data |
+| `SegmentOverflow` | Maximum segment count exceeded |
+| `MalformedSegment` | Segment structure is invalid |
+| `NotInitialized` | Cryptor was not properly initialized |
+| `AlreadyInitialized` | Cryptor was already initialized |
+| `InvalidInput` | Invalid key, AAD, header, or segment size |
+| `Dependency` | OpenSSL or other dependency error |
+
 ## Building the Library
 
 Test building is enabled by default. To disable tests, add `-DBUILD_TESTING=OFF` to the CMake command.
