@@ -161,10 +161,11 @@ if (result != FloeResult::Success) {
 
 ### Parameter Specifications
 
-| Specification | Segment Size | Use Case                                                 |
-|---------------|--------------|----------------------------------------------------------|
-| `GCM256_IV256_4K()` | 4 KB | Small segments, good for memory constrained environments. |
-| `GCM256_IV256_1M()` | 1 MB | General purpose, good for most files                     |
+| Specification       | Segment Size | Use Case                                                  |
+|---------------------|--------------|-----------------------------------------------------------|
+| `GCM256_IV256_4K()` | 4 KB         | Small segments, good for memory constrained environments. |
+| `GCM256_IV256_1M()` | 1 MB         | General purpose, good for most files                      |
+| `GCM256_IV256_5M()` | 5 MB         | Very large files, minimal segment overhead                |
 
 ### Error Handling
 
@@ -178,21 +179,21 @@ if (result != FloeResult::Success) {
 
 Error codes:
 
-| Code | Description |
-|------|-------------|
-| `Success` | Operation completed successfully |
-| `Unexpected` | An unexpected internal error occurred |
-| `BadHeader` | Header validation failed (wrong parameters or corrupted) |
-| `BadTag` | Authentication tag verification failed (data tampered or wrong key) |
-| `Truncated` | Ciphertext was incomplete (missing final segment) |
-| `Closed` | Cryptor has already been closed |
-| `DataOverflow` | Output buffer too small for the data |
-| `SegmentOverflow` | Maximum segment count exceeded |
-| `MalformedSegment` | Segment structure is invalid |
-| `NotInitialized` | Cryptor was not properly initialized |
-| `AlreadyInitialized` | Cryptor was already initialized |
-| `InvalidInput` | Invalid key, AAD, header, or segment size |
-| `Dependency` | OpenSSL or other dependency error |
+| Code                 | Description                                                         |
+|----------------------|---------------------------------------------------------------------|
+| `Success`            | Operation completed successfully                                    |
+| `Unexpected`         | An unexpected internal error occurred                               |
+| `BadHeader`          | Header validation failed (wrong parameters or corrupted)            |
+| `BadTag`             | Authentication tag verification failed (data tampered or wrong key) |
+| `Truncated`          | Ciphertext was incomplete (missing final segment)                   |
+| `Closed`             | Cryptor has already been closed                                     |
+| `DataOverflow`       | Output buffer too small for the data                                |
+| `SegmentOverflow`    | Maximum segment count exceeded                                      |
+| `MalformedSegment`   | Segment structure is invalid                                        |
+| `NotInitialized`     | Cryptor was not properly initialized                                |
+| `AlreadyInitialized` | Cryptor was already initialized                                     |
+| `InvalidInput`       | Invalid key, AAD, header, or segment size                           |
+| `Dependency`         | OpenSSL or other dependency error                                   |
 
 ## Building the Library
 
