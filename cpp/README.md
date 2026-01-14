@@ -50,7 +50,7 @@ sudo apt-get install cmake g++ libssl-dev clang-tidy lcov
 
 using namespace sf;
 
-// Your 32-byte key (in production, use a secure key derivation function)
+// Your 32-byte key (in production, use a randomly generated or securely derived key)
 std::vector<ub1> rawKey(32);
 // ... populate rawKey with secure random bytes ...
 
