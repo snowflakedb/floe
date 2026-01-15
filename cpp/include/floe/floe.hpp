@@ -25,7 +25,8 @@ enum class FloeResult {
   MalformedSegment,
   NotInitialized,
   AlreadyInitialized,
-  InvalidInput
+  InvalidInput,
+  Dependency
 };
 
 const char* floeErrorMessage(FloeResult errorCode);
@@ -163,8 +164,10 @@ class FloeKey {
   //  std::span<const ub1>& purpose,
   //                  size_t purposeLength, size_t len) const noexcept;
   [[nodiscard]]
-  std::unique_ptr<FloeKey> derive(const std::vector<ub1>& iv, const std::vector<ub1>& aad,
-                                  const FloePurpose& purpose, size_t len) const noexcept;
+  std::pair<FloeResult, std::unique_ptr<FloeKey>> derive(const std::vector<ub1>& iv,
+                                                          const std::vector<ub1>& aad,
+                                                          const FloePurpose& purpose,
+                                                          size_t len) const noexcept;
 
   std::unique_ptr<FloeKeyPrivateState> m_state;
 };
@@ -221,7 +224,7 @@ class FloeCryptor {
 
  private:
   [[nodiscard]]
-  std::unique_ptr<FloeKey> deriveSegmentKey() const noexcept;
+  std::pair<FloeResult, std::unique_ptr<FloeKey>> deriveSegmentKey() const noexcept;
   std::vector<ub1> m_floeIv;
   std::vector<ub1> m_aad;
   ub8 m_lastMaskedCounter = UB8_MAX;
@@ -233,7 +236,7 @@ class FloeCryptor {
   void cryptorInitialize(const std::vector<ub1>& iv, const std::vector<ub1>& aad,
                          std::unique_ptr<FloeKey> key) noexcept;
 
-  void useCurrentKey() noexcept;
+  [[nodiscard]] FloeResult useCurrentKey() noexcept;
 
   void buildSegmentAad(bool last, std::span<ub1>& segmentAad) const noexcept;
   FloeParameterSpec m_params;

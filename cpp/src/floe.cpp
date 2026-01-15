@@ -153,6 +153,7 @@ const char* floeErrorMessage(FloeResult errorCode) {
     FLOE_ERROR_CASE(FloeResult::NotInitialized);
     FLOE_ERROR_CASE(FloeResult::AlreadyInitialized);
     FLOE_ERROR_CASE(FloeResult::InvalidInput);
+    FLOE_ERROR_CASE(FloeResult::Dependency);
     default:
       return "Undefined error";
   }
@@ -422,31 +423,63 @@ bool FloeKey::isValid() const noexcept {
     getKey().size() == getKeyLength(getParameterSpec().getAead());
 }
 
-std::unique_ptr<FloeKey> FloeKey::derive(const std::vector<ub1>& iv, const std::vector<ub1>& aad,
-                                         const FloePurpose& purpose, size_t len) const noexcept {
-  assert(len <= getHashLength(m_state->m_params.getHash()));
-  EVP_MAC_CTX* ctx = EVP_MAC_CTX_new(m_state->m_mac);
-
-  const ub1 oneByte = 1;
+std::pair<FloeResult, std::unique_ptr<FloeKey>> FloeKey::derive(
+    const std::vector<ub1>& iv, const std::vector<ub1>& aad, const FloePurpose& purpose,
+    size_t len) const noexcept {
   const auto params = &(m_state->m_params);
-  assert(EVP_MAC_init(ctx, m_state->m_key.data(), m_state->m_key.size(), m_state->m_macParams));
 
-  assert(EVP_MAC_update(ctx, params->getEncoded()->data(), params->getEncoded()->size()));
-  assert(EVP_MAC_update(ctx, iv.data(), iv.size()));
-  assert(EVP_MAC_update(ctx, purpose.m_span.data(), purpose.m_span.size()));
-  assert(EVP_MAC_update(ctx, aad.data(), aad.size()));
-  assert(EVP_MAC_update(ctx, &oneByte, 1));
+  // Validate requested length fits in our buffer and hash output
+  if (len > getHashLength(params->getHash())) {
+    return {FloeResult::Unexpected, nullptr};
+  }
 
+  EVP_MAC_CTX* ctx = EVP_MAC_CTX_new(m_state->m_mac);
+  if (ctx == nullptr) {
+    return {FloeResult::Dependency, nullptr};
+  }
+
+  constexpr ub1 oneByte = 1;
+
+  // Initialize MAC with key
+  if (!EVP_MAC_init(ctx, m_state->m_key.data(), m_state->m_key.size(), m_state->m_macParams)) {
+    EVP_MAC_CTX_free(ctx);
+    return {FloeResult::Dependency, nullptr};
+  }
+
+  // Update MAC with all inputs
+  if (!EVP_MAC_update(ctx, params->getEncoded()->data(), params->getEncoded()->size()) ||
+      !EVP_MAC_update(ctx, iv.data(), iv.size()) ||
+      !EVP_MAC_update(ctx, purpose.m_span.data(), purpose.m_span.size()) ||
+      !EVP_MAC_update(ctx, aad.data(), aad.size()) ||
+      !EVP_MAC_update(ctx, &oneByte, 1)) {
+    EVP_MAC_CTX_free(ctx);
+    return {FloeResult::Dependency, nullptr};
+  }
+
+  // Finalize MAC
   unsigned char buf[48] = {0};  // big enough for now
-  assert(sizeof(buf) >= getHashLength(params->getHash()));
+  // ReSharper disable once CppDFAConstantConditions
+  if (sizeof(buf) < getHashLength(params->getHash())) {
+    EVP_MAC_CTX_free(ctx);
+    return {FloeResult::Unexpected, nullptr};
+  }
   size_t out_len = 0;
-  assert(EVP_MAC_final(ctx, buf, &out_len, sizeof(buf)));
-  assert(out_len >= len);
+  if (!EVP_MAC_final(ctx, buf, &out_len, sizeof(buf))) {
+    EVP_MAC_CTX_free(ctx);
+    OPENSSL_cleanse(buf, sizeof(buf));
+    return {FloeResult::Dependency, nullptr};
+  }
+
+  EVP_MAC_CTX_free(ctx);
+
+  if (out_len < len) {
+    OPENSSL_cleanse(buf, sizeof(buf));
+    return {FloeResult::Unexpected, nullptr};
+  }
 
   auto result = std::make_unique<FloeKey>(std::span<const ub1>(buf, len), *params);
   OPENSSL_cleanse(buf, sizeof(buf));
-  EVP_MAC_CTX_free(ctx);
-  return result;
+  return {FloeResult::Success, std::move(result)};
 }
 
 std::vector<ub1> FloeParameterSpec::encodeHeader() const noexcept {
@@ -489,7 +522,7 @@ void FloeCryptor::buildSegmentAad(bool last, std::span<ub1>& segmentAad) const n
   segmentAad[8] = last ? 1 : 0;
 }
 
-std::unique_ptr<FloeKey> FloeCryptor::deriveSegmentKey() const noexcept {
+std::pair<FloeResult, std::unique_ptr<FloeKey>> FloeCryptor::deriveSegmentKey() const noexcept {
   const ub8 mask = m_params.getRotationMask();
   const ub8 maskedSegmentNumber = m_counter & mask;
 
@@ -501,14 +534,18 @@ std::unique_ptr<FloeKey> FloeCryptor::deriveSegmentKey() const noexcept {
                               getKeyLength(m_params.getAead()));
 }
 
-void FloeCryptor::useCurrentKey() noexcept {
+FloeResult FloeCryptor::useCurrentKey() noexcept {
   const ub8 mask = m_params.getRotationMask();
   const ub8 maskedSegmentNumber = m_counter & mask;
   if (maskedSegmentNumber != m_lastMaskedCounter) {
-    auto sessionKey = deriveSegmentKey();
+    auto [result, sessionKey] = deriveSegmentKey();
+    if (result != FloeResult::Success) {
+      return result;
+    }
     m_aeadCryptor->setKey(*sessionKey);
     m_lastMaskedCounter = maskedSegmentNumber;
   }
+  return FloeResult::Success;
 }
 
 // FloeEncryptor
@@ -548,7 +585,9 @@ FloeResult FloeEncryptor::processSegment(const std::span<const ub1>& input,
     return FloeResult::SegmentOverflow;
   }
   // aead_key = DERIVE_KEY(state.MessageKey, state.iv, state.aad, State.Counter)
-  useCurrentKey();
+  if (auto keyResult = useCurrentKey(); keyResult != FloeResult::Success) {
+    return keyResult;
+  }
 
   // aead_iv = RND(AEAD_IV_LEN) is implicit in the encryption
   // aead_aad = I2BE(State.Counter, 8) || 0x00
@@ -587,7 +626,9 @@ FloeResult FloeEncryptor::processLastSegment(const std::span<const ub1>& input,
   }
 
   // aead_key = DERIVE_KEY(state.MessageKey, state.iv, state.aad, State.Counter)
-  useCurrentKey();
+  if (auto keyResult = useCurrentKey(); keyResult != FloeResult::Success) {
+    return keyResult;
+  }
 
   // aead_iv = RND(AEAD_IV_LEN) is implicit in the encryption
   // aead_aad = I2BE(State.Counter, 8) || 0x01
@@ -628,12 +669,19 @@ FloeResult FloeEncryptor::initialize(const FloeKey& key,
   m_header.insert(m_header.end(), params.getEncoded()->begin(), params.getEncoded()->end());
   m_header.insert(m_header.end(), iv.begin(), iv.end());
 
-  // HeaderTag = FLOE_KDF(key, iv, aad, “HEADER_TAG:”)
-  auto tagAsKey = key.derive(iv, aadVec, PURPOSE_HEADER_TAG, HEADER_TAG_SIZE);
+  // HeaderTag = FLOE_KDF(key, iv, aad, "HEADER_TAG:")
+  auto [tagResult, tagAsKey] = key.derive(iv, aadVec, PURPOSE_HEADER_TAG, HEADER_TAG_SIZE);
+  if (tagResult != FloeResult::Success) {
+    return tagResult;
+  }
   auto tag = tagAsKey->getKey();
   m_header.insert(m_header.end(), tag.begin(), tag.end());
 
-  auto messageKey = key.derive(iv, aadVec, PURPOSE_MESSAGE_KEY, getHashLength(params.getHash()));
+  auto [keyResult, messageKey] =
+      key.derive(iv, aadVec, PURPOSE_MESSAGE_KEY, getHashLength(params.getHash()));
+  if (keyResult != FloeResult::Success) {
+    return keyResult;
+  }
   cryptorInitialize(iv, aadVec, std::move(messageKey));
   return FloeResult::Success;
 }
@@ -691,13 +739,20 @@ FloeResult FloeDecryptor::initialize(const sf::FloeKey& key, const std::span<con
   auto headerTag = &header[expectedEncodedParams->size() + params->getIvLength()];
   std::vector<ub1> iv;
   iv.insert(iv.end(), &header[expectedEncodedParams->size()], headerTag);
-  auto tagAsKey = key.derive(iv, aadVec, PURPOSE_HEADER_TAG, HEADER_TAG_SIZE);
+  auto [tagResult, tagAsKey] = key.derive(iv, aadVec, PURPOSE_HEADER_TAG, HEADER_TAG_SIZE);
+  if (tagResult != FloeResult::Success) {
+    return tagResult;
+  }
   auto tag = tagAsKey->getKey();
   // Check the header tag. This *must* be constant-time
   if (CRYPTO_memcmp(tag.data(), headerTag, tag.size()) != 0) {
     return FloeResult::BadTag;
   }
-  auto messageKey = key.derive(iv, aadVec, PURPOSE_MESSAGE_KEY, getHashLength(params->getHash()));
+  auto [keyResult, messageKey] =
+      key.derive(iv, aadVec, PURPOSE_MESSAGE_KEY, getHashLength(params->getHash()));
+  if (keyResult != FloeResult::Success) {
+    return keyResult;
+  }
   cryptorInitialize(iv, aadVec, std::move(messageKey));
   return FloeResult::Success;
 }
@@ -735,7 +790,9 @@ FloeResult FloeDecryptor::processSegment(const std::span<const ub1>& input,
   }
 
   // aead_key = DERIVE_KEY(state.MessageKey, state.iv, state.aad, State.Counter)
-  useCurrentKey();
+  if (auto keyResult = useCurrentKey(); keyResult != FloeResult::Success) {
+    return keyResult;
+  }
 
   ub1 rawSegmentAad[SEGMENT_AAD_SIZE];
   std::span<ub1> segmentAad(rawSegmentAad);
@@ -777,7 +834,9 @@ FloeResult FloeDecryptor::processLastSegment(const std::span<const ub1>& input,
     return FloeResult::MalformedSegment;
   }
   // aead_key = DERIVE_KEY(state.MessageKey, state.iv, state.aad, State.Counter)
-  useCurrentKey();
+  if (auto keyResult = useCurrentKey(); keyResult != FloeResult::Success) {
+    return keyResult;
+  }
 
   ub1 rawSegmentAad[SEGMENT_AAD_SIZE];
   std::span<ub1> segmentAad(rawSegmentAad);
