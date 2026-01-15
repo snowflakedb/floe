@@ -7,6 +7,7 @@ include(cmake/platform.cmake)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_TESTING "Build tests" ON)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
@@ -35,6 +36,13 @@ target_include_directories(floe
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(floe PRIVATE OpenSSL::Crypto)
+
+add_custom_target(lint
+    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/lint.sh --build-dir ${CMAKE_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Running clang-tidy on project sources..."
+    VERBATIM
+)
 
 if(BUILD_TESTING)
     enable_testing()

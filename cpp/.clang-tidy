@@ -1,0 +1,30 @@
+---
+# Only report diagnostics for project headers/sources (avoid vendored deps in build/_deps, etc.)
+HeaderFilterRegex: '.*[/\\]cpp[/\\](include|src|tests)[/\\].*'
+SystemHeaders: false
+
+Checks: >-
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-convert-member-functions-to-static,
+  -readability-named-parameter,
+  -readability-magic-numbers,
+  -readability-identifier-length
+
+WarningsAsErrors: ''
+
+CheckOptions:
+  - key:             readability-implicit-bool-conversion.AllowIntegerConditions
+    value:           'true'
+  - key:             readability-implicit-bool-conversion.AllowPointerConditions
+    value:           'true'
+  - key:             modernize-use-nullptr.NullMacros
+    value:           'NULL'
+
+FormatStyle: file
+...

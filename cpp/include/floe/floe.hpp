@@ -5,10 +5,10 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 
-#include <span>
 #include "../../src/platform.hpp"
 
 namespace sf {
@@ -45,7 +45,7 @@ enum class FloeHash { UNDEFINED, SHA_384 };
 // Defines the non-cryptographic algorithm parameters that define FLOE's behavior
 // Immutable and threadsafe
 class FloeParameterSpec {
- public:
+public:
   // FLOE with AES-GCM-256, a 256-bit FLOE IV, and 4 kilobyte encrypted segments
   static FloeParameterSpec GCM256_IV256_4K() noexcept;
   // FLOE with AES-GCM-256, a 256-bit FLOE IV, and 1 megabyte encrypted segments
@@ -112,7 +112,7 @@ class FloeParameterSpec {
   [[nodiscard]]
   bool isValid() const noexcept;
 
- private:
+private:
   friend FloeCryptor;
   friend FloeEncryptor;
   friend FloeDecryptor;
@@ -137,16 +137,16 @@ class FloeParameterSpec {
 // with multiple algorithms and parameters. (It is explicitly okay to use the same key with
 // different segment lengths.) Immutable and threadsafe
 class FloeKey {
- public:
+public:
   FloeKey(const std::span<const ub1>& key, const FloeParameterSpec& params) noexcept;
 
   // Move Constructor
   FloeKey(FloeKey&& other) = delete;
   // Copy Constructor
   FloeKey(FloeKey& other) = delete;
-  
+
   ~FloeKey() noexcept;
-  
+
   [[nodiscard]]
   std::span<const ub1> getKey() const noexcept;
   [[nodiscard]]
@@ -154,7 +154,7 @@ class FloeKey {
   [[nodiscard]]
   bool isValid() const noexcept;
 
- private:
+private:
   friend FloeCryptor;
   friend FloeEncryptor;
   friend FloeDecryptor;
@@ -164,10 +164,9 @@ class FloeKey {
   //  std::span<const ub1>& purpose,
   //                  size_t purposeLength, size_t len) const noexcept;
   [[nodiscard]]
-  std::pair<FloeResult, std::unique_ptr<FloeKey>> derive(const std::vector<ub1>& iv,
-                                                          const std::vector<ub1>& aad,
-                                                          const FloePurpose& purpose,
-                                                          size_t len) const noexcept;
+  std::pair<FloeResult, std::unique_ptr<FloeKey>>
+  derive(const std::vector<ub1>& iv, const std::vector<ub1>& aad, const FloePurpose& purpose,
+         size_t len) const noexcept;
 
   std::unique_ptr<FloeKeyPrivateState> m_state;
 };
@@ -177,7 +176,7 @@ class FloeKey {
 // only minimal work. These objects are *not* thread-safe but may be used from multiple threads,
 // provided that calls are protected by mutexes.
 class FloeCryptor {
- public:
+public:
   // No copy or move constructors
   FloeCryptor(const FloeCryptor&) = delete;
   FloeCryptor(const FloeCryptor&&) = delete;
@@ -222,15 +221,15 @@ class FloeCryptor {
 
   virtual ~FloeCryptor() noexcept;
 
- private:
+private:
   [[nodiscard]]
   std::pair<FloeResult, std::unique_ptr<FloeKey>> deriveSegmentKey() const noexcept;
   std::vector<ub1> m_floeIv;
   std::vector<ub1> m_aad;
   ub8 m_lastMaskedCounter = UB8_MAX;
 
- protected:
-  FloeCryptor();  // = default;
+protected:
+  FloeCryptor(); // = default;
 
   // Takes ownership of the key
   void cryptorInitialize(const std::vector<ub1>& iv, const std::vector<ub1>& aad,
@@ -251,11 +250,11 @@ class FloeCryptor {
 // Class which encrypts data using FLOE.
 // See thread safety notes on FloeCryptor.
 class FloeEncryptor : public FloeCryptor {
- public:
+public:
   // Factory for this object.
   // No references are kept to passed in data.
-  static std::pair<FloeResult, std::unique_ptr<FloeEncryptor>> create(
-      const FloeKey&, const std::span<const ub1>& aad) noexcept;
+  static std::pair<FloeResult, std::unique_ptr<FloeEncryptor>>
+  create(const FloeKey&, const std::span<const ub1>& aad) noexcept;
   // No copy or move constructors
   FloeEncryptor(const FloeEncryptor&) = delete;
   FloeEncryptor(const FloeEncryptor&&) = delete;
@@ -285,7 +284,7 @@ class FloeEncryptor : public FloeCryptor {
   [[nodiscard]]
   size_t sizeOfLastOutput(size_t lastSegmentSize) const noexcept override;
 
- private:
+private:
   FloeResult initialize(const FloeKey&, const std::span<const ub1>& aad) noexcept;
   FloeEncryptor() = default;
   std::vector<ub1> m_header;
@@ -294,12 +293,12 @@ class FloeEncryptor : public FloeCryptor {
 // Class which decrypts data using FLOE.
 // See thread safety notes on FloeCryptor.
 class FloeDecryptor : public FloeCryptor {
- public:
+public:
   // Factory for this object.
   // No references are kept to passed in data.
-  static std::pair<FloeResult, std::unique_ptr<FloeDecryptor>> create(
-      const FloeKey& key, const std::span<const ub1>& aad,
-      const std::span<const ub1>& header) noexcept;
+  static std::pair<FloeResult, std::unique_ptr<FloeDecryptor>>
+  create(const FloeKey& key, const std::span<const ub1>& aad,
+         const std::span<const ub1>& header) noexcept;
   // No copy or move constructors
   FloeDecryptor(const FloeDecryptor&) = delete;
   FloeDecryptor(const FloeDecryptor&&) = delete;
@@ -325,9 +324,9 @@ class FloeDecryptor : public FloeCryptor {
   [[nodiscard]]
   size_t sizeOfLastOutput(size_t lastSegmentSize) const noexcept override;
 
- private:
+private:
   FloeDecryptor() = default;
   FloeResult initialize(const FloeKey& key, const std::span<const ub1>& aad,
                         const std::span<const ub1>& header) noexcept;
 };
-}  // namespace sf
+} // namespace sf
