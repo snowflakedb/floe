@@ -5,9 +5,9 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
-#include <span>
 
 #include "../../src/platform.hpp"
 
