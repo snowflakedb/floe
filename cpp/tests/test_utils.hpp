@@ -11,8 +11,10 @@ namespace sf::test {
 extern const ub1* RAW_AAD;
 extern const std::span<const ub1> AAD;
 
-// Base path for KAT files
+// Base path for KAT files (reference KATs from parent repo)
 extern const std::string KAT_BASE;
+// Base path for locally generated KAT files
+extern const std::string LOCAL_KAT_BASE;
 
 // Decrypt ciphertext using the given parameters and return plaintext
 FloeResult decryptKat(const FloeParameterSpec& param, const std::span<const ub1>& ct,
