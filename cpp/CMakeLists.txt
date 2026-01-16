@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_TESTING "Build tests" ON)
+option(BUILD_KATS "Build KAT generator project" OFF)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 
 if(ENABLE_COVERAGE)
@@ -47,6 +48,10 @@ add_custom_target(lint
 if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(BUILD_KATS)
+    add_subdirectory(kats_generator)
 endif()
 
 if(ENABLE_COVERAGE)

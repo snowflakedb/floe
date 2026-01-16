@@ -161,10 +161,11 @@ if (result != FloeResult::Success) {
 
 ### Parameter Specifications
 
-| Specification | Segment Size | Use Case                                                 |
-|---------------|--------------|----------------------------------------------------------|
-| `GCM256_IV256_4K()` | 4 KB | Small segments, good for memory constrained environments. |
-| `GCM256_IV256_1M()` | 1 MB | General purpose, good for most files                     |
+| Specification        | Segment Size | Use Case                                                       |
+|----------------------|--------------|----------------------------------------------------------------|
+| `GCM256_IV256_4K()`  | 4 KB         | Small segments, good for memory constrained environments       |
+| `GCM256_IV256_1M()`  | 1 MB         | General purpose, good for most files                           |
+| `GCM256_IV256_16M()` | 16 MB        | Large files or those being uploaded to cloud storage providers |
 
 ### Error Handling
 
@@ -178,21 +179,21 @@ if (result != FloeResult::Success) {
 
 Error codes:
 
-| Code | Description |
-|------|-------------|
-| `Success` | Operation completed successfully |
-| `Unexpected` | An unexpected internal error occurred |
-| `BadHeader` | Header validation failed (wrong parameters or corrupted) |
-| `BadTag` | Authentication tag verification failed (data tampered or wrong key) |
-| `Truncated` | Ciphertext was incomplete (missing final segment) |
-| `Closed` | Cryptor has already been closed |
-| `DataOverflow` | Output buffer too small for the data |
-| `SegmentOverflow` | Maximum segment count exceeded |
-| `MalformedSegment` | Segment structure is invalid |
-| `NotInitialized` | Cryptor was not properly initialized |
-| `AlreadyInitialized` | Cryptor was already initialized |
-| `InvalidInput` | Invalid key, AAD, header, or segment size |
-| `Dependency` | OpenSSL or other dependency error |
+| Code                 | Description                                                         |
+|----------------------|---------------------------------------------------------------------|
+| `Success`            | Operation completed successfully                                    |
+| `Unexpected`         | An unexpected internal error occurred                               |
+| `BadHeader`          | Header validation failed (wrong parameters or corrupted)            |
+| `BadTag`             | Authentication tag verification failed (data tampered or wrong key) |
+| `Truncated`          | Ciphertext was incomplete (missing final segment)                   |
+| `Closed`             | Cryptor has already been closed                                     |
+| `DataOverflow`       | Output buffer too small for the data                                |
+| `SegmentOverflow`    | Maximum segment count exceeded                                      |
+| `MalformedSegment`   | Segment structure is invalid                                        |
+| `NotInitialized`     | Cryptor was not properly initialized                                |
+| `AlreadyInitialized` | Cryptor was already initialized                                     |
+| `InvalidInput`       | Invalid key, AAD, header, or segment size                           |
+| `Dependency`         | OpenSSL or other dependency error                                   |
 
 ## Building the Library
 
@@ -223,6 +224,40 @@ The library provides a public include directory that should be distributed with 
 └── cmake-build-release/
     └── libfloe.a       # Built static library
 ```
+
+## Tools
+
+### KAT Generator
+
+The project includes a tool for generating Known Answer Tests (KATs) for cross-implementation testing. Use the provided script to build and run it:
+
+```bash
+bash scripts/generate_kats.sh
+```
+
+This will:
+1. Configure CMake with `BUILD_KATS=ON`
+2. Build the KAT generator
+3. Output KAT files to `cpp/kats/`
+
+Alternatively, build and run manually:
+
+```bash
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_KATS=ON -DBUILD_TESTING=OFF -B cmake-build-kats
+cmake --build cmake-build-kats --target create_kats
+./cmake-build-kats/kats_generator/create_kats /path/to/output/directory
+```
+
+This generates pairs of files for each parameter specification:
+- `<name>_pt.txt` – Hex-encoded plaintext
+- `<name>_ct.txt` – Hex-encoded ciphertext (header + encrypted segments)
+
+Generated KATs:
+- `cpp_GCM256_IV256_4K` – 4 KB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_1M` – 1 MB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_16M` – 16 MB segments, 2 full segments + partial
+- `cpp_GCM256_IV256_64` – 64-byte segments (edge case)
+- `cpp_rotation` – Key rotation testing
 
 ## Testing
 
