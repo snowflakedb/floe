@@ -91,7 +91,7 @@ public class FloeParameterSpec {
     return encodedParams.clone();
   }
 
-  int getHeaderSize() {
+  public int getHeaderSize() {
     return encodedParams.length + floeIvLength + headerTagLength;
   }
 }
