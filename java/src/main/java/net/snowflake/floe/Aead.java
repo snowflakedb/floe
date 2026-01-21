@@ -33,7 +33,7 @@ public enum Aead {
     this.aeadProvider = aeadProvider;
   }
 
-  byte getId() {
+  public byte getId() {
     return id;
   }
 
@@ -41,15 +41,15 @@ public enum Aead {
     return jceKeyTypeName;
   }
 
-  int getKeyLength() {
+  public int getKeyLength() {
     return keyLength;
   }
 
-  int getIvLength() {
+  public int getIvLength() {
     return ivLength;
   }
 
-  int getAuthTagLength() {
+  public int getAuthTagLength() {
     return authTagLength;
   }
 
