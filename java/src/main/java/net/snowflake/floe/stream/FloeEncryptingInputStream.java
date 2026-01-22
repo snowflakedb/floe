@@ -45,7 +45,12 @@ public class FloeEncryptingInputStream extends InputStream {
     encryptedSegmentBuf.clear();
     byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
     int readPlaintextBytes = in.read(plaintextSegment);
-    byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment, 0, readPlaintextBytes);
+    byte[] ciphertextSegment;
+    if (readPlaintextBytes == -1) {
+      ciphertextSegment = encryptor.processSegment(new byte[0]);
+    } else {
+      ciphertextSegment = encryptor.processSegment(plaintextSegment, 0, readPlaintextBytes);
+    }
     encryptedSegmentBuf.put(ciphertextSegment);
     encryptedSegmentBuf.flip();
     return encryptedSegmentBuf.get() & 0xFF;
@@ -73,7 +78,12 @@ public class FloeEncryptingInputStream extends InputStream {
     while (outBuf.hasRemaining() && !encryptor.isClosed()) {
       byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
       int read = in.read(plaintextSegment);
-      byte[] ciphertextSegment = encryptor.processSegment(plaintextSegment, 0, read);
+      byte[] ciphertextSegment;
+      if (read == -1) {
+        ciphertextSegment = encryptor.processSegment(new byte[0]);
+      } else {
+        ciphertextSegment = encryptor.processSegment(plaintextSegment, 0, read);
+      }
       if (ciphertextSegment.length > outBuf.remaining()) {
         int remaining = outBuf.remaining();
         outBuf.put(ciphertextSegment, 0, remaining);
