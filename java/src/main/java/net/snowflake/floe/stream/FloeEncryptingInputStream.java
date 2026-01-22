@@ -44,9 +44,9 @@ public class FloeEncryptingInputStream extends InputStream {
     }
     encryptedSegmentBuf.clear();
     byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
-    int readPlaintextBytes = in.read(plaintextSegment);
+    int readPlaintextBytes = readSegment(plaintextSegment);
     byte[] ciphertextSegment;
-    if (readPlaintextBytes == -1) {
+    if (readPlaintextBytes == 0) {
       ciphertextSegment = encryptor.processSegment(new byte[0]);
     } else {
       ciphertextSegment = encryptor.processSegment(plaintextSegment, 0, readPlaintextBytes);
@@ -54,6 +54,18 @@ public class FloeEncryptingInputStream extends InputStream {
     encryptedSegmentBuf.put(ciphertextSegment);
     encryptedSegmentBuf.flip();
     return encryptedSegmentBuf.get() & 0xFF;
+  }
+
+  private int readSegment(byte[] buffer) throws IOException {
+    int offset = 0;
+    while (offset < buffer.length) {
+      int read = in.read(buffer, offset, buffer.length - offset);
+      if (read == -1) {
+        return offset;
+      }
+      offset += read;
+    }
+    return offset;
   }
 
   @Override
@@ -75,11 +87,11 @@ public class FloeEncryptingInputStream extends InputStream {
     if (encryptor.isClosed()) {
       return -1;
     }
+    byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
     while (outBuf.hasRemaining() && !encryptor.isClosed()) {
-      byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
-      int read = in.read(plaintextSegment);
+      int read = readSegment(plaintextSegment);
       byte[] ciphertextSegment;
-      if (read == -1) {
+      if (read == 0) {
         ciphertextSegment = encryptor.processSegment(new byte[0]);
       } else {
         ciphertextSegment = encryptor.processSegment(plaintextSegment, 0, read);
@@ -87,9 +99,7 @@ public class FloeEncryptingInputStream extends InputStream {
       if (ciphertextSegment.length > outBuf.remaining()) {
         int remaining = outBuf.remaining();
         outBuf.put(ciphertextSegment, 0, remaining);
-        if (!encryptedSegmentBuf.hasRemaining()) {
-          encryptedSegmentBuf.clear();
-        }
+        encryptedSegmentBuf.clear();
         encryptedSegmentBuf.put(ciphertextSegment, remaining, ciphertextSegment.length - remaining);
         encryptedSegmentBuf.flip();
       } else {

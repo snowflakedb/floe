@@ -211,6 +211,61 @@ class FloeStreamTest {
       }
       assertArrayEquals(plaintextBytes, resultOutputStream.toByteArray());
     }
+
+    @ParameterizedTest
+    @CsvSource({
+        "0, 7, 40",
+        "3, 7, 40",
+        "0, 5, 20",
+        "3, 9, 1024",
+        "0, 11, 77",
+        "3, 13, 17"
+    })
+    void shouldEncryptAndDecryptWithSlowInputStream(int lastSegmentLength, int slowReadSize, int bufferSize) throws Exception {
+      FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+      byte[] plaintextBytes = new byte[2 * parameterSpec.getPlainTextSegmentLength() + lastSegmentLength];
+      FloeEncryptingInputStream encryptingInputStream = new FloeEncryptingInputStream(new SlowInputStream(slowReadSize, new ByteArrayInputStream(plaintextBytes)), parameterSpec, secretKey, aad, headerInStream());
+      ByteArrayOutputStream ciphertextOutputStream = new ByteArrayOutputStream();
+
+      int read;
+      byte[] buffer = new byte[bufferSize];
+      while ((read = encryptingInputStream.read(buffer, 0, buffer.length)) != -1) {
+        ciphertextOutputStream.write(buffer, 0, read);
+      }
+
+      byte[] ciphertextBytes = ciphertextOutputStream.toByteArray();
+      FloeDecryptingInputStream decryptingInputStream = new FloeDecryptingInputStream(new SlowInputStream(slowReadSize, new ByteArrayInputStream(ciphertextBytes)), parameterSpec, secretKey, aad, headerInStream() ? null : encryptingInputStream.getHeader());
+      ByteArrayOutputStream resultOutputStream = new ByteArrayOutputStream();
+
+      while ((read = decryptingInputStream.read(buffer, 0, buffer.length)) != -1) {
+        resultOutputStream.write(buffer, 0, read);
+      }
+      assertArrayEquals(plaintextBytes, resultOutputStream.toByteArray());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {5, 7, 11})
+    void shouldEncryptAndDecryptEmptyFileWithSlowInputStream(int slowReadSize) throws Exception {
+      FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+      byte[] plaintextBytes = new byte[0];
+      FloeEncryptingInputStream encryptingInputStream = new FloeEncryptingInputStream(new SlowInputStream(slowReadSize, new ByteArrayInputStream(plaintextBytes)), parameterSpec, secretKey, aad, headerInStream());
+      ByteArrayOutputStream ciphertextOutputStream = new ByteArrayOutputStream();
+
+      int read;
+      byte[] buffer = new byte[40];
+      while ((read = encryptingInputStream.read(buffer, 0, buffer.length)) != -1) {
+        ciphertextOutputStream.write(buffer, 0, read);
+      }
+
+      byte[] ciphertextBytes = ciphertextOutputStream.toByteArray();
+      FloeDecryptingInputStream decryptingInputStream = new FloeDecryptingInputStream(new SlowInputStream(slowReadSize, new ByteArrayInputStream(ciphertextBytes)), parameterSpec, secretKey, aad, headerInStream() ? null : encryptingInputStream.getHeader());
+      ByteArrayOutputStream resultOutputStream = new ByteArrayOutputStream();
+
+      while ((read = decryptingInputStream.read(buffer, 0, buffer.length)) != -1) {
+        resultOutputStream.write(buffer, 0, read);
+      }
+      assertArrayEquals(plaintextBytes, resultOutputStream.toByteArray());
+    }
   }
 
   @Nested

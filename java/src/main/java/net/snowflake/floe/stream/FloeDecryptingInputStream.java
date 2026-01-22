@@ -24,11 +24,22 @@ public class FloeDecryptingInputStream extends InputStream {
     this.parameterSpec = parameterSpec;
     if (header == null) {
       header = new byte[parameterSpec.getHeaderSize()];
-      in.read(header);
+      readFully(in, header);
     }
     this.decryptor = Floe.getInstance(parameterSpec).createDecryptor(secretKey, aad, header);
     this.plaintextSegmentBuf = ByteBuffer.allocate(parameterSpec.getPlainTextSegmentLength());
     this.plaintextSegmentBuf.position(parameterSpec.getPlainTextSegmentLength()); // meaning it needs to be filled
+  }
+
+  private static void readFully(InputStream in, byte[] buffer) throws IOException {
+    int offset = 0;
+    while (offset < buffer.length) {
+      int read = in.read(buffer, offset, buffer.length - offset);
+      if (read == -1) {
+        throw new IOException("Unexpected end of stream");
+      }
+      offset += read;
+    }
   }
 
   @Override
@@ -40,7 +51,7 @@ public class FloeDecryptingInputStream extends InputStream {
       return -1;
     }
     byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
-    int readPlaintextBytes = in.read(ciphertextSegment);
+    int readPlaintextBytes = readSegment(ciphertextSegment);
     byte[] plaintextSegment = decryptor.processSegment(ciphertextSegment, 0, readPlaintextBytes);
     if (plaintextSegment.length == 0) {
       return -1;
@@ -49,6 +60,18 @@ public class FloeDecryptingInputStream extends InputStream {
     plaintextSegmentBuf.put(plaintextSegment);
     plaintextSegmentBuf.flip();
     return plaintextSegmentBuf.get() & 0xFF;
+  }
+
+  private int readSegment(byte[] buffer) throws IOException {
+    int offset = 0;
+    while (offset < buffer.length) {
+      int read = in.read(buffer, offset, buffer.length - offset);
+      if (read == -1) {
+        return offset;
+      }
+      offset += read;
+    }
+    return offset;
   }
 
   @Override
@@ -65,16 +88,14 @@ public class FloeDecryptingInputStream extends InputStream {
     if (decryptor.isClosed()) {
       return -1;
     }
+    byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
     while (outBuf.hasRemaining() && !decryptor.isClosed()) {
-      byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
-      int read = in.read(ciphertextSegment);
+      int read = readSegment(ciphertextSegment);
       byte[] plaintextSegment = decryptor.processSegment(ciphertextSegment, 0, read);
       if (plaintextSegment.length > outBuf.remaining()) {
         int remaining = outBuf.remaining();
         outBuf.put(plaintextSegment, 0, remaining);
-        if (!plaintextSegmentBuf.hasRemaining()) {
-          plaintextSegmentBuf.clear();
-        }
+        plaintextSegmentBuf.clear();
         plaintextSegmentBuf.put(plaintextSegment, remaining, plaintextSegment.length - remaining);
         plaintextSegmentBuf.flip();
       } else {
