@@ -266,6 +266,84 @@ class FloeStreamTest {
       }
       assertArrayEquals(plaintextBytes, resultOutputStream.toByteArray());
     }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 3})
+    void shouldEncryptWithStreamAndDecryptWithPlainFloe(int lastSegmentLength) throws Exception {
+      FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+      byte[] plaintextBytes = new byte[2 * parameterSpec.getPlainTextSegmentLength() + lastSegmentLength];
+      FloeEncryptingInputStream encryptingInputStream = new FloeEncryptingInputStream(new ByteArrayInputStream(plaintextBytes), parameterSpec, secretKey, aad, headerInStream());
+      ByteArrayOutputStream ciphertextOutputStream = new ByteArrayOutputStream();
+
+      int read;
+      byte[] buffer = new byte[40];
+      while ((read = encryptingInputStream.read(buffer, 0, buffer.length)) != -1) {
+        ciphertextOutputStream.write(buffer, 0, read);
+      }
+
+      byte[] ciphertextBytes = ciphertextOutputStream.toByteArray();
+      ByteArrayInputStream ciphertextInputStream = new ByteArrayInputStream(ciphertextBytes);
+      ByteArrayOutputStream resultOutputStream = new ByteArrayOutputStream();
+
+      byte[] header;
+      if (headerInStream()) {
+        header = new byte[parameterSpec.getHeaderSize()];
+        ciphertextInputStream.read(header);
+      } else {
+        header = encryptingInputStream.getHeader();
+      }
+
+      Floe floe = Floe.getInstance(parameterSpec);
+      try (FloeDecryptor decryptor = floe.createDecryptor(secretKey, aad, header)) {
+        byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
+        do {
+          int readBytes = ciphertextInputStream.read(ciphertextSegment);
+          byte[] targetPlaintext = decryptor.processSegment(ciphertextSegment, 0, readBytes);
+          resultOutputStream.write(targetPlaintext, 0, targetPlaintext.length);
+        } while (!decryptor.isClosed());
+      }
+      assertArrayEquals(plaintextBytes, resultOutputStream.toByteArray());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 3})
+    void shouldEncryptWithPlainFloeAndDecryptWithStream(int lastSegmentLength) throws Exception {
+      FloeParameterSpec parameterSpec = new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32);
+      byte[] plaintextBytes = new byte[2 * parameterSpec.getPlainTextSegmentLength() + lastSegmentLength];
+      ByteArrayInputStream plaintextInputStream = new ByteArrayInputStream(plaintextBytes);
+      ByteArrayOutputStream ciphertextOutputStream = new ByteArrayOutputStream();
+
+      Floe floe = Floe.getInstance(parameterSpec);
+      byte[] header;
+      try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
+        header = encryptor.getHeader();
+        if (headerInStream()) {
+          ciphertextOutputStream.write(header);
+        }
+        byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
+        do {
+          byte[] ciphertext;
+          int readBytes = plaintextInputStream.read(plaintextSegment);
+          if (readBytes == -1) {
+            ciphertext = encryptor.processSegment(new byte[0]);
+          } else {
+            ciphertext = encryptor.processSegment(plaintextSegment, 0, readBytes);
+          }
+          ciphertextOutputStream.write(ciphertext, 0, ciphertext.length);
+        } while (!encryptor.isClosed());
+      }
+
+      byte[] ciphertextBytes = ciphertextOutputStream.toByteArray();
+      FloeDecryptingInputStream decryptingInputStream = new FloeDecryptingInputStream(new ByteArrayInputStream(ciphertextBytes), parameterSpec, secretKey, aad, headerInStream() ? null : header);
+      ByteArrayOutputStream resultOutputStream = new ByteArrayOutputStream();
+
+      int read;
+      byte[] buffer = new byte[40];
+      while ((read = decryptingInputStream.read(buffer, 0, buffer.length)) != -1) {
+        resultOutputStream.write(buffer, 0, read);
+      }
+      assertArrayEquals(plaintextBytes, resultOutputStream.toByteArray());
+    }
   }
 
   @Nested

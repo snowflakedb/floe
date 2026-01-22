@@ -16,6 +16,7 @@ public class FloeEncryptingInputStream extends InputStream {
   private final FloeEncryptor encryptor;
   private final ByteBuffer headerBuf;
   private final ByteBuffer encryptedSegmentBuf;
+  private final byte[] plaintextSegment;
 
   public FloeEncryptingInputStream(InputStream in, FloeParameterSpec parameterSpec, SecretKey secretKey, byte[] aad, boolean writeHeader) {
     this.in = in;
@@ -25,6 +26,7 @@ public class FloeEncryptingInputStream extends InputStream {
     this.headerBuf = ByteBuffer.wrap(encryptor.getHeader());
     this.encryptedSegmentBuf = ByteBuffer.allocate(parameterSpec.getEncryptedSegmentLength());
     this.encryptedSegmentBuf.position(parameterSpec.getEncryptedSegmentLength()); // meaning it needs to be filled
+    this.plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
   }
 
   public byte[] getHeader() {
@@ -43,7 +45,6 @@ public class FloeEncryptingInputStream extends InputStream {
       return -1;
     }
     encryptedSegmentBuf.clear();
-    byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
     int readPlaintextBytes = readSegment(plaintextSegment);
     byte[] ciphertextSegment;
     if (readPlaintextBytes == 0) {
@@ -87,7 +88,6 @@ public class FloeEncryptingInputStream extends InputStream {
     if (encryptor.isClosed()) {
       return -1;
     }
-    byte[] plaintextSegment = new byte[parameterSpec.getPlainTextSegmentLength()];
     while (outBuf.hasRemaining() && !encryptor.isClosed()) {
       int read = readSegment(plaintextSegment);
       byte[] ciphertextSegment;

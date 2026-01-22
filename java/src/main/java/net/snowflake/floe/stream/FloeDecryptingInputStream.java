@@ -14,6 +14,8 @@ public class FloeDecryptingInputStream extends InputStream {
   private final FloeParameterSpec parameterSpec;
   private final FloeDecryptor decryptor;
   private final ByteBuffer plaintextSegmentBuf;
+  private final byte[] ciphertextSegment;
+
 
   public FloeDecryptingInputStream(InputStream in, FloeParameterSpec parameterSpec, SecretKey secretKey, byte[] aad) throws IOException {
     this(in, parameterSpec, secretKey, aad, null);
@@ -29,6 +31,7 @@ public class FloeDecryptingInputStream extends InputStream {
     this.decryptor = Floe.getInstance(parameterSpec).createDecryptor(secretKey, aad, header);
     this.plaintextSegmentBuf = ByteBuffer.allocate(parameterSpec.getPlainTextSegmentLength());
     this.plaintextSegmentBuf.position(parameterSpec.getPlainTextSegmentLength()); // meaning it needs to be filled
+    this.ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
   }
 
   private static void readFully(InputStream in, byte[] buffer) throws IOException {
@@ -50,7 +53,6 @@ public class FloeDecryptingInputStream extends InputStream {
     if (decryptor.isClosed()) {
       return -1;
     }
-    byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
     int readPlaintextBytes = readSegment(ciphertextSegment);
     byte[] plaintextSegment = decryptor.processSegment(ciphertextSegment, 0, readPlaintextBytes);
     if (plaintextSegment.length == 0) {
@@ -88,7 +90,6 @@ public class FloeDecryptingInputStream extends InputStream {
     if (decryptor.isClosed()) {
       return -1;
     }
-    byte[] ciphertextSegment = new byte[parameterSpec.getEncryptedSegmentLength()];
     while (outBuf.hasRemaining() && !decryptor.isClosed()) {
       int read = readSegment(ciphertextSegment);
       byte[] plaintextSegment = decryptor.processSegment(ciphertextSegment, 0, read);
