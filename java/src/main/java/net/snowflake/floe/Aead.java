@@ -33,6 +33,13 @@ public enum Aead {
     this.aeadProvider = aeadProvider;
   }
 
+  public static Aead from(byte id) {
+    if (id == 0) {
+      return AES_GCM_256;
+    }
+    throw new IllegalArgumentException("Invalid AEAD ID");
+  }
+
   public byte getId() {
     return id;
   }

@@ -22,6 +22,11 @@ public class Floe {
     return new Floe(parameterSpec);
   }
 
+  public static Floe getInstance(byte[] header) {
+    FloeParameterSpec floeParameterSpec = FloeParameterSpec.fromHeader(header);
+    return new Floe(floeParameterSpec);
+  }
+
   public FloeEncryptor createEncryptor(SecretKey key, byte[] aad) {
     return createEncryptor(key, aad, new SecureRandom());
   }
