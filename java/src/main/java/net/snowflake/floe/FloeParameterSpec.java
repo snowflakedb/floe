@@ -2,6 +2,8 @@ package net.snowflake.floe;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 import static net.snowflake.floe.BaseSegmentProcessor.headerTagLength;
@@ -50,6 +52,10 @@ public class FloeParameterSpec {
     this.encodedParams = paramEncode();
   }
 
+  public static FloeParameterSpec fromHeader(byte[] header) {
+    return paramDecode(header);
+  }
+
   private byte[] paramEncode() {
     ByteBuffer result = ByteBuffer.allocate(10).order(ByteOrder.BIG_ENDIAN);
     result.put(aead.getId());
@@ -57,6 +63,15 @@ public class FloeParameterSpec {
     result.putInt(encryptedSegmentLength);
     result.putInt(floeIvLength);
     return result.array();
+  }
+
+  private static FloeParameterSpec paramDecode(byte[] header) {
+    ByteBuffer headerBuf = ByteBuffer.wrap(header).order(ByteOrder.BIG_ENDIAN);
+    Aead aead = Aead.from(headerBuf.get());
+    Hash hash = Hash.from(headerBuf.get());
+    int encryptedSegmentLength = headerBuf.getInt();
+    int floeIvLength = headerBuf.getInt();
+    return new FloeParameterSpec(aead, hash, encryptedSegmentLength, floeIvLength);
   }
 
   public Aead getAead() {
@@ -93,5 +108,28 @@ public class FloeParameterSpec {
 
   int getHeaderSize() {
     return encodedParams.length + floeIvLength + headerTagLength;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    FloeParameterSpec that = (FloeParameterSpec) o;
+    return encryptedSegmentLength == that.encryptedSegmentLength
+        && floeIvLength == that.floeIvLength
+        && aead == that.aead
+        && hash == that.hash
+        && Objects.equals(keyRotationModuloOverride, that.keyRotationModuloOverride)
+        && Objects.equals(maxSegmentNumberOverride, that.maxSegmentNumberOverride)
+        && Objects.deepEquals(encodedParams, that.encodedParams);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(aead, hash, encryptedSegmentLength, floeIvLength, keyRotationModuloOverride, maxSegmentNumberOverride, Arrays.hashCode(encodedParams));
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{encryptedSegmentLength=%s, floeIvLength=%s, aeadId=%s, hashId=%s}", this.getClass().getCanonicalName(), encryptedSegmentLength, floeIvLength, aead.getId(), hash.getId());
   }
 }
