@@ -78,9 +78,9 @@ public class FloeEncryptingInputStream extends InputStream {
     }
     ByteBuffer outBuf = ByteBuffer.wrap(out, off, len);
     if (encryptedSegmentBuf.hasRemaining()) {
-      byte[] remainingOfPreviousSegments = new byte[Math.min(encryptedSegmentBuf.remaining(), outBuf.remaining())];
-      encryptedSegmentBuf.get(remainingOfPreviousSegments);
-      outBuf.put(remainingOfPreviousSegments);
+      int bytesToCopy = Math.min(encryptedSegmentBuf.remaining(), outBuf.remaining());
+      outBuf.put(encryptedSegmentBuf.array(), encryptedSegmentBuf.position(), bytesToCopy);
+      encryptedSegmentBuf.position(encryptedSegmentBuf.position() + bytesToCopy);
       if (encryptor.isClosed() || !outBuf.hasRemaining()) {
         return outBuf.position() - off;
       }

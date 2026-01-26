@@ -80,9 +80,9 @@ public class FloeDecryptingInputStream extends InputStream {
   public int read(byte[] out, int off, int len) throws IOException {
     ByteBuffer outBuf = ByteBuffer.wrap(out, off, len);
     if (plaintextSegmentBuf.hasRemaining()) {
-      byte[] remainingOfPreviousSegments = new byte[Math.min(plaintextSegmentBuf.remaining(), outBuf.remaining())];
-      plaintextSegmentBuf.get(remainingOfPreviousSegments);
-      outBuf.put(remainingOfPreviousSegments);
+      int bytesToCopy = Math.min(plaintextSegmentBuf.remaining(), outBuf.remaining());
+      outBuf.put(plaintextSegmentBuf.array(), plaintextSegmentBuf.position(), bytesToCopy);
+      plaintextSegmentBuf.position(plaintextSegmentBuf.position() + bytesToCopy);
       if (decryptor.isClosed() || !outBuf.hasRemaining()) {
         return outBuf.position() - off;
       }
