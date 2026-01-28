@@ -1,21 +1,92 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<project xmlns="http://maven.apache.org/POM/4.0.0">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- ============== Project Coordinates ============== -->
     <groupId>net.snowflake</groupId>
     <artifactId>floe</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <name>Fast lightweight online encryption</name>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
+    <!-- ============== Project Metadata (Required for Maven Central) ============== -->
+    <name>FLOE - Fast Lightweight Online Encryption</name>
+    <description>
+        Streaming encryption library that provides streaming capabilities for non-streamable 
+        encryption algorithms (AEADs).
+    </description>
+    <url>https://github.com/snowflakedb/floe</url>
+    <inceptionYear>2025</inceptionYear>
+
+    <!-- ============== License ============== -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- ============== Developers ============== -->
+    <developers>
+        <developer>
+            <id>snowflake</id>
+            <name>Snowflake Computing</name>
+            <organization>Snowflake Inc.</organization>
+            <organizationUrl>https://www.snowflake.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <!-- ============== SCM (Source Control) ============== -->
+    <scm>
+        <connection>scm:git:git://github.com/snowflakedb/floe.git</connection>
+        <developerConnection>scm:git:git@github.com:snowflakedb/floe.git</developerConnection>
+        <url>https://github.com/snowflakedb/floe/tree/main</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <!-- ============== Issue Management ============== -->
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/snowflakedb/floe/issues</url>
+    </issueManagement>
+
+    <!-- ============== Distribution Management (Maven Central via Sonatype) ============== -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <!-- ============== Properties ============== -->
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>8</java.version>
+
+        <!-- Dependency versions -->
         <junit.version>5.11.3</junit.version>
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
         <commons-io.version>2.17.0</commons-io.version>
         <commons-codec.version>1.17.1</commons-codec.version>
+
+        <!-- Plugin versions -->
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>3.10.1</maven-javadoc-plugin.version>
+        <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
+        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
     </properties>
 
+    <!-- ============== Dependencies ============== -->
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -49,6 +120,7 @@
         </dependency>
     </dependencies>
 
+    <!-- ============== Build Configuration ============== -->
     <build>
         <testResources>
             <testResource>
@@ -58,7 +130,9 @@
                 <directory>../kats/reference</directory>
             </testResource>
         </testResources>
+
         <plugins>
+            <!-- Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -66,8 +140,18 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
+
+            <!-- Surefire Plugin (test runner) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+            </plugin>
+
+            <!-- JaCoCo Code Coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -87,6 +171,100 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Nexus Staging Plugin for Maven Central deployment -->
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+
+            <!-- Release Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
+                    <goals>deploy</goals>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <!-- ============== Profiles ============== -->
+    <profiles>
+        <!-- Release Profile - activated when publishing to Maven Central -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!-- Source JAR -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven-source-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Javadoc JAR -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
+                        <configuration>
+                            <source>${java.version}</source>
+                            <doclint>none</doclint>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- GPG Signing -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Use gpg-agent for passphrase -->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
