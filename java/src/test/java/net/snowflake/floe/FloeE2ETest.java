@@ -10,7 +10,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
@@ -170,23 +169,4 @@ class FloeE2ETest {
     );
   }
 
-  private static class SlowInputStream extends InputStream {
-    private final int numberOfBytes;
-    private final InputStream delegate;
-
-    public SlowInputStream(int numberOfBytes, InputStream delegate) {
-      this.numberOfBytes = numberOfBytes;
-      this.delegate = delegate;
-    }
-
-    @Override
-    public int read() throws IOException {
-      return delegate.read();
-    }
-
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-      return delegate.read(b, off, Math.min(len, numberOfBytes));
-    }
-  }
 }
