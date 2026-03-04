@@ -74,6 +74,16 @@ class FloeTest {
         encryptor.processSegment(new byte[0]); // ensure encryptor is closed
       }
     }
+
+    @Test
+    void validateHeaderIsParsedToParameterSpec() throws Exception {
+      FloeParameterSpec parameterSpec =
+          new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 4096, 32);
+      Floe floe = Floe.getInstance(parameterSpec);
+      FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad);
+      byte[] header = encryptor.getHeader();
+      assertEquals(parameterSpec, FloeParameterSpec.fromHeader(header));
+    }
   }
 
   @Nested

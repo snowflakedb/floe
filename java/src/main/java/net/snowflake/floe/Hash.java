@@ -13,6 +13,13 @@ public enum Hash {
     this.length = length;
   }
 
+  public static Hash from(byte id) {
+    if (id == 0) {
+      return SHA384;
+    }
+    throw new IllegalArgumentException("Invalid hash ID");
+  }
+
   public byte getId() {
     return id;
   }
