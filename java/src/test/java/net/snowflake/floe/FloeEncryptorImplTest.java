@@ -29,7 +29,7 @@ class FloeEncryptorImplTest {
             Hash.SHA384,
             12345678,
             32,
-            4,
+            -4L,
             1L << 40);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(new SecretKeySpec(new byte[32], "FLOE"), "test aad".getBytes(StandardCharsets.UTF_8), random)) {
@@ -68,7 +68,7 @@ class FloeEncryptorImplTest {
   void shouldThrowExceptionOnMaxSegmentReached() throws Exception {
     FloeParameterSpec parameterSpec =
         new FloeParameterSpec(
-            Aead.AES_GCM_256, Hash.SHA384, 40,32, 20, 3L);
+            Aead.AES_GCM_256, Hash.SHA384, 40,32, Aead.AES_GCM_256.getKeyRotationMask(), 3L);
     Floe floe = Floe.getInstance(parameterSpec);
     try (FloeEncryptor encryptor = floe.createEncryptor(secretKey, aad)) {
       byte[] plaintext = new byte[8];

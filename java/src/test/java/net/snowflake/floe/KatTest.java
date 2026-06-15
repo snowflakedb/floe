@@ -98,7 +98,7 @@ class KatTest {
             "pub_java_GCM256_IV256_1M"
         ),
         Arguments.of(
-            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, 4, 1L << 40),
+            new FloeParameterSpec(Aead.AES_GCM_256, Hash.SHA384, 40, 32, -4L, 1L << 40),
             "pub_java_rotation"
         )
     );
