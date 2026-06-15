@@ -10,7 +10,7 @@ public enum Aead {
   private final int keyLength;
   private final int ivLength;
   private final int authTagLength;
-  private final int keyRotationMask;
+  private final long keyRotationMask;
   private final long maxSegmentNumber;
   private final Supplier<AeadProvider> aeadProvider;
 
@@ -20,7 +20,7 @@ public enum Aead {
       int keyLength,
       int ivLength,
       int authTagLength,
-      int keyRotationMask,
+      int maskBits,
       long maxSegmentNumber,
       Supplier<AeadProvider> aeadProvider) {
     this.jceKeyTypeName = jceKeyTypeName;
@@ -28,7 +28,10 @@ public enum Aead {
     this.id = id;
     this.ivLength = ivLength;
     this.authTagLength = authTagLength;
-    this.keyRotationMask = keyRotationMask;
+    long tmpMask = 1L << maskBits;
+    tmpMask--;
+    tmpMask = ~tmpMask;
+    this.keyRotationMask = tmpMask;
     this.maxSegmentNumber = maxSegmentNumber;
     this.aeadProvider = aeadProvider;
   }
@@ -60,7 +63,7 @@ public enum Aead {
     return authTagLength;
   }
 
-  int getKeyRotationMask() {
+  long getKeyRotationMask() {
     return keyRotationMask;
   }
 

@@ -16,7 +16,7 @@ public class FloeParameterSpec {
   private final Hash hash;
   private final int encryptedSegmentLength;
   private final int floeIvLength;
-  private final Integer keyRotationModuloOverride;
+  private final Long keyRotationMaskOverride;
   private final Long maxSegmentNumberOverride;
   private final byte[] encodedParams;
 
@@ -35,13 +35,13 @@ public class FloeParameterSpec {
       Hash hash,
       int encryptedSegmentLength,
       int floeIvLength,
-      Integer keyRotationModuloOverride,
+      Long keyRotationMaskOverride,
       Long maxSegmentNumberOverride) {
     this.aead = aead;
     this.hash = hash;
     this.encryptedSegmentLength = encryptedSegmentLength;
     this.floeIvLength = floeIvLength;
-    this.keyRotationModuloOverride = keyRotationModuloOverride;
+    this.keyRotationMaskOverride = keyRotationMaskOverride;
     this.maxSegmentNumberOverride = maxSegmentNumberOverride;
     if (encryptedSegmentLength <= 0) {
       throw new IllegalArgumentException("encryptedSegmentLength must be > 0");
@@ -94,8 +94,8 @@ public class FloeParameterSpec {
     return encryptedSegmentLength - aead.getIvLength() - aead.getAuthTagLength() - Floe.SEGMENT_SIZE_MARKER_LENGTH;
   }
 
-  int getKeyRotationMask() {
-    return Optional.ofNullable(keyRotationModuloOverride).orElse(aead.getKeyRotationMask());
+  long getKeyRotationMask() {
+    return Optional.ofNullable(keyRotationMaskOverride).orElse(aead.getKeyRotationMask());
   }
 
   long getMaxSegmentNumber() {
@@ -118,14 +118,14 @@ public class FloeParameterSpec {
         && floeIvLength == that.floeIvLength
         && aead == that.aead
         && hash == that.hash
-        && Objects.equals(keyRotationModuloOverride, that.keyRotationModuloOverride)
+        && Objects.equals(keyRotationMaskOverride, that.keyRotationMaskOverride)
         && Objects.equals(maxSegmentNumberOverride, that.maxSegmentNumberOverride)
         && Objects.deepEquals(encodedParams, that.encodedParams);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(aead, hash, encryptedSegmentLength, floeIvLength, keyRotationModuloOverride, maxSegmentNumberOverride, Arrays.hashCode(encodedParams));
+    return Objects.hash(aead, hash, encryptedSegmentLength, floeIvLength, keyRotationMaskOverride, maxSegmentNumberOverride, Arrays.hashCode(encodedParams));
   }
 
   @Override
